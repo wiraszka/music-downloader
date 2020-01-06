@@ -64,11 +64,14 @@ with youtube_dl.YoutubeDL(download_options) as dl:
 tags = {
     'video_title' : video_list[i],
     'url' : url_list[i],
+    'video_duration' : '',
     'artist' : '',
-    'song' : '',
+    'track' : '',
     'mix' : '',
     'featuring' : '',
     'album' : '',
+    'album_type' : '',
+    'track_number' : '',
     'genre' : '',
     'extra' : '',
     'bpm' : '',
@@ -80,7 +83,7 @@ tags = {
 audio_file = video_list[i] + '.mp3'
 audio_file_path = os.getcwd() + '/' + audio_file
 extra_info = MP3(audio_file_path)
-tags['duration'] = extra_info.info.length
+tags['video_duration'] = extra_info.info.length
 tags['bitrate'] = extra_info.info.bitrate
 
 # Write song info to .txt file
