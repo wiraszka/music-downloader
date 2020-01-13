@@ -1,6 +1,17 @@
 ## MUSIC DOWNLOADER
 Download any song from Youtube
 
+Changes:
+# Jan 8 2020
+- Changes to general flow:
+- search spotify API first!
+- this will allow pulling of song details and album art directly and accurately
+- After spotify match is confirmed by user, THEN search Youtube API for videos matching 'artist - title' format pulled from spotify result
+        - this will eliminate need to excessive formatting of youtube video titles, detect valid songs, and add ability to remove unwanted youtube search results (live sets, covers)
+        - this will also allow to pull metadata tags and album art directly from spotify result and makes sure it matches what user wanted to find
+
+v1:
+
 # 1) audio-download.py
 - user inputs a song they would like to download
 - script will use Youtube API to list top-5 closest (high-quality) search results
