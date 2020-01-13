@@ -56,11 +56,11 @@ def spotify_search(search_query):
             tags['total_tracks'] = song['album']['total_tracks']
             tags['duration_s'] = int(song['duration_ms']) / 1000
             print(tags['year'])
-            print(tags['id'], '-', tags['artist'], '-', tags['track'], '-', tags['album'], '-', tags['duration_s'], tags['album_art'])
+            print(tags['id'], '-', tags['artist'], '-', tags['track'], '- album:', tags['album'], '- duration:', tags['duration_s'])
             song_info.append(tags)
         global search_summary
         search_summary = json.dumps(song_info, indent=2)
-    return search_summary, search_success
+    return search_success
 
 
 
@@ -158,18 +158,27 @@ def apply_ID3_tags(audio_file, special_characters, search_summary, index):
         apply_tags.tag.track_num = search_summary[index]['track_number']
         apply_tags.tag.save()
         print('Audio tags applied to audio file')
-        os.rename('temp.mp3', original_audio_file)
+        try:
+            os.rename('temp.mp3', original_audio_file)
+        except:
+            pass
         os.chdir('../')
     except:
         print('Could not apply album art')
+        os.chdir('../')
 
 
 # __init__ (lol)
 search_query = input("Input song you want to download: ")
 spotify_search(search_query)
-search_summary = json.loads(search_summary)
-user_choice = int(input('Pick best match (1-5): '))
-index = user_choice - 1
+try:
+    search_summary = json.loads(search_summary)
+    user_choice = int(input('Pick best match (1-5): '))
+    index = user_choice - 1
+except:
+    user_choice = ''
+    index = 0
+
 search_youtube(index, search_success, search_query)
 if search_success == True:
     dl_cover_art(index)
@@ -179,7 +188,6 @@ if search_success == True:
         print('Filename has special characters, temporarily renaming file')
         os.rename(audio_file, 'temp.mp3')
         special_characters = True
-
     apply_ID3_tags(audio_file, special_characters, search_summary, index)
 else:
     print('Could not find audio tags or album art')
