@@ -10,7 +10,6 @@ Changes:
         - this will eliminate need to excessive formatting of youtube video titles, detect valid songs, and add ability to remove unwanted youtube search results (live sets, covers)
         - this will also allow to pull metadata tags and album art directly from spotify result and makes sure it matches what user wanted to find
 
-v1:
 
 # 1) audio-download.py
 - user inputs a song they would like to download
