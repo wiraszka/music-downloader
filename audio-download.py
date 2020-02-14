@@ -101,24 +101,25 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
         'highest_match' : 0
         }
     for item in youtube_results:
-# Remove videos such as covers, live recordings, performances unless explicitly asked for
+# Remove videos such as covers, live recordingss/performances unless explicitly asked for
         print('Analyzing:', item['vid_title'], item['duration'])
-        if 'cover' in item['vid_title'].lower():
-            print('DISALLOWED')
-            continue
-        if 'live' in item['vid_title'].lower():
-            print('DISALLOWED')
-            continue
+        if 'cover' not in search_str:
+            if 'cover' in item['vid_title'].lower():
+                print('DISALLOWED')
+                continue
+        if 'live' not in search_str:
+            if 'live' in item['vid_title'].lower():
+                print('DISALLOWED')
+                continue
 # Remove videos that don't match length of target song on spotify
-        try:
+        if search_success == True:
             lower_limit = int(spotify_summary[index]['duration_s']) - 5
             upper_limit = int(spotify_summary[index]['duration_s']) + 5
             print(lower_limit, item['duration'], upper_limit)
             if not lower_limit < item['duration'] < upper_limit:
                 print('Duration mismatch')
                 continue
-        except:
-            pass
+
 
 # Use fuzzy matching to find closest match between search string and remaining search results
         match_ratio = fuzz.ratio(item['vid_title'], search_str)
@@ -148,7 +149,7 @@ def dl_song(chosen_url):
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '320',
         }],
     }
 
@@ -173,6 +174,7 @@ def dl_cover_art(index, spotify_summary):
         os.remove('img.png')
     image_file = 'img.png'.format(0)
     response = urllib.request.urlretrieve(spotify_summary[index]['album_art'], image_file)
+
 
 def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename):
 # Rename audio file to 'temp.mp3' because file might have non-ascii characters (eyed3 cannot handle these)
