@@ -19,7 +19,11 @@ class App:
 
         return self
 
-    def window_close(self):
+
+    def 
+
+
+    def close_window(self):
         self.quit()
         self.destroy()
         exit()
@@ -30,9 +34,9 @@ class App:
 
         file_menu = Menu(menu_bar, tearoff = 0)
         menu_bar.add_cascade(label = 'File', menu = file_menu)
-        file_menu.add_command(label = 'Refresh')
+        file_menu.add_command(label = 'Refresh', command = self.refresh_window)
         file_menu.add_command(label = 'Settings')
-        file_menu.add_command(label = 'Exit', command = self.window_close)
+        file_menu.add_command(label = 'Exit', command = self.close_window)
 
         help_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label = 'Help', menu = help_menu)
