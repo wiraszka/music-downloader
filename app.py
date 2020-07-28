@@ -3,22 +3,24 @@ import os
 import json
 from tkinter import *
 from tkinter import ttk
+from ttkthemes import themed_tk as tk
 from PIL import ImageTk, Image
 
 
-HEIGHT = 320
-WIDTH = 480
+HEIGHT = 432
+WIDTH = 768
 
 # def main():
 #     root = Tk()
 #     window = App(root)
 #     return None
 
-class Window(Tk):
+class Window(tk.ThemedTk):
     def __init__(self):
         super(Window, self).__init__()
-
         self.title("Adam's Bomb Ass Music Downloader")
+        #print(self.get_themes())
+        self.set_theme('clearlooks')
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
         self.iconphoto(False, PhotoImage(file='my_icon.png'))
@@ -26,36 +28,47 @@ class Window(Tk):
         #self.create_label()
         self.create_entry()
         self.create_button()
+        #self.create_button_img()
         self.create_menu()
 
 
     def create_canvas(self):
-        canvas = Canvas(self, height=HEIGHT, width=WIDTH)
-        coord = 10, 50, 280, 210
+        canvas = Canvas(self, width=WIDTH, height=HEIGHT)
         canvas.grid(column=0, row=0, rowspan=15, columnspan=5)
-        img_main = Image.open('bg_main_480x320.jpg')
-        canvas.image = ImageTk.PhotoImage(img_main)
+        img_main = Image.open('bg_main.jpg')
+        resized = img_main.resize((WIDTH, HEIGHT), Image.ANTIALIAS)
+        canvas.image = ImageTk.PhotoImage(resized)
         canvas.create_image(0, 0, image=canvas.image, anchor='nw')
 
 
     def create_label(self):
         label_font = ('calibri', 10)
-        label = Label(self, text='Enter a song:', anchor='w')
+        label = ttk.Label(self, text='Enter a song:', anchor='w')
         label.config(font = label_font)
         label.grid(column=0, row=12)
 
 
     def create_entry(self):
         self.input = StringVar()
-        self.entry = Entry(self, textvariable=self.input, width=40)
+        self.entry = ttk.Entry(self, textvariable=self.input, width=40)
         self.entry.focus()
         self.entry.grid(column=2, row=13, sticky='ew')
 
 
     def create_button(self):
-        self.search_btn = Button(self, text='Search', padx=1, pady=1,
-                                 fg='white', bg='black', command=self.click_search)
-        self.search_btn.grid(column=3, row=13, sticky='ew')
+        self.search_btn = Button(self, text='Search', command=self.click_search)
+        self.search_btn.grid(column=3, row=13, sticky='w')
+
+    # NOT USED
+    def create_button_img(self):
+        im = Image.open('search_button_small.png')
+        print(im.mode)
+        if 'transparency' in im.info:
+            print('transparent!')
+        self.button_img = PhotoImage(file='search_button_small.png')
+        self.button_img_resized = self.button_img.subsample(2, 2)
+        self.search_btn = Button(self, image=self.button_img_resized, command=self.click_search, borderwidth=0)
+        self.search_btn.grid(column=3, row=13, sticky='w')
 
 
     def create_menu(self):
@@ -105,18 +118,18 @@ class Window(Tk):
         #print(self.search_results)
         print(self.search_status)
         if self.search_status:
-            self.new_page = 'spotify_page'
-            self.switch_frame()
+            self.display_results()
         else:
             self.label = Label(self, text='Could not find track.')
             self.label.grid(column=2, row=14)
 
-
-    def switch_frame(self):
+    # NOT USED
+    def remove_widgets(self):
         for widget in self.winfo_children():
             widget.destroy()
-        # self.entry.grid_forget()
-        # self.search_btn.grid_forget()
+
+    # NOT USED
+    def switch_frame(self):
         if self.new_page == 'spotify_page':
             print('spotify page')
             self.create_spotify_page()
@@ -124,8 +137,7 @@ class Window(Tk):
             print('download page')
 
 
-
-    def create_spotify_page(self):
+    def display_results(self):
         for track in self.search_results:
             #print(track)
             id = track['id']
@@ -139,18 +151,40 @@ class Window(Tk):
             print(display_text)
 
 
-
-
-
-
-
-
-
     def create_progressbar(self):
         self.progress_bar = ttk.Progressbar(self, orient = 'horizontal',
                                             length = 180, mode = 'determinate')
         self.progress_bar.grid(column=0, row=3, pady=10)
 
+
+
+
+
+class EntryWithPlaceholder(Entry):
+    def __init__(self, master=None, placeholder="PLACEHOLDER", color='grey'):
+        super().__init__(master)
+
+        self.placeholder = placeholder
+        self.placeholder_color = color
+        self.default_fg_color = self['fg']
+
+        self.bind("<FocusIn>", self.foc_in)
+        self.bind("<FocusOut>", self.foc_out)
+
+        self.put_placeholder()
+
+    def put_placeholder(self):
+        self.insert(0, self.placeholder)
+        self['fg'] = self.placeholder_color
+
+    def foc_in(self, *args):
+        if self['fg'] == self.placeholder_color:
+            self.delete('0', 'end')
+            self['fg'] = self.default_fg_color
+
+    def foc_out(self, *args):
+        if not self.get():
+            self.put_placeholder()
 
 
 
