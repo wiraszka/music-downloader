@@ -1,5 +1,6 @@
 import downloader as ad
 import os
+import json
 from tkinter import *
 from tkinter import ttk
 from PIL import ImageTk, Image
@@ -96,25 +97,46 @@ class Window(Tk):
             self.search_btn.configure(text = 'Searching...')
             self.search_track()
 
+
     def search_track(self):
         self.results = ad.spotify_search(self.search_query)
-        self.search_results = self.results[0]
+        self.search_results = json.loads(self.results[0])
         self.search_status = self.results[1]
-        print(self.search_results)
+        #print(self.search_results)
         print(self.search_status)
         if self.search_status:
             self.new_page = 'spotify_page'
-            self.switch_frame()        
+            self.switch_frame()
         else:
             self.label = Label(self, text='Could not find track.')
             self.label.grid(column=2, row=14)
 
-    def switch_frame(self):
-        self.entry.grid_forget()
-        self.search_btn.grid_forget()
-        if self.new_page == 'spotify_page':
-            print('new page')
 
+    def switch_frame(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+        # self.entry.grid_forget()
+        # self.search_btn.grid_forget()
+        if self.new_page == 'spotify_page':
+            print('spotify page')
+            self.create_spotify_page()
+        elif self.new_page == 'download_page':
+            print('download page')
+
+
+
+    def create_spotify_page(self):
+        for track in self.search_results:
+            #print(track)
+            id = track['id']
+            artist = track['artist']
+            name = track['track']
+            album = track['album']
+            duration = track['duration']
+            display_text = str(id) + ':' + artist + ' - ' + name + ' - ' + duration
+            button_info = Button(self, text=display_text, width=40)
+            button_info.grid(column=2)
+            print(display_text)
 
 
 
