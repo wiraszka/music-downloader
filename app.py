@@ -19,11 +19,12 @@ display_text = {'searching': 'Searching for download links...',
                 'finishing': 'Finishing up',
                 'done': 'Done'}
 
+
 class Window(tk.ThemedTk):
     def __init__(self):
         super(Window, self).__init__()
         self.title("Adam's Bomb Ass Music Downloader")
-        #print(self.get_themes())
+        # print(self.get_themes())
         self.set_theme('clearlooks')
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
@@ -31,9 +32,8 @@ class Window(tk.ThemedTk):
         self.create_canvas()
         self.create_entry()
         self.create_button()
-        #self.create_button_img()
+        # self.create_button_img()
         self.create_menu()
-
 
     def create_canvas(self):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
@@ -43,20 +43,17 @@ class Window(tk.ThemedTk):
         self.canvas.image = ImageTk.PhotoImage(resized)
         self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
 
-
     def create_label(self):
         label_font = ('calibri', 10)
         label = ttk.Label(self, text='Enter a song:', anchor='w')
-        label.config(font = label_font)
+        label.config(font=label_font)
         label.grid(column=2, row=15)
-
 
     def create_entry(self):
         self.input = StringVar()
         self.entry = ttk.Entry(self, textvariable=self.input, width=40)
         self.entry.focus()
         self.entry.grid(column=2, row=13, sticky='ew')
-
 
     def create_button(self):
         self.search_btn = Button(self, text='Search', command=self.click_search)
@@ -70,36 +67,33 @@ class Window(tk.ThemedTk):
             print('transparent!')
         self.button_img = PhotoImage(file='search_button_small.png')
         self.button_img_resized = self.button_img.subsample(2, 2)
-        self.search_btn = Button(self, image=self.button_img_resized, command=self.click_search, borderwidth=0)
+        self.search_btn = Button(self, image=self.button_img_resized,
+                                 command=self.click_search, borderwidth=0)
         self.search_btn.grid(column=3, row=13, sticky='w')
-
 
     def create_menu(self):
         menu_bar = Menu(self)
-        self.config(menu = menu_bar)
+        self.config(menu=menu_bar)
         # Create FILE menu bar
-        file_menu = Menu(menu_bar, tearoff = 0)
-        menu_bar.add_cascade(label = 'File', menu = file_menu)
-        file_menu.add_command(label = 'Refresh', command = self.refresh_window)
-        file_menu.add_command(label = 'Settings')
-        file_menu.add_command(label = 'Exit', command = self.close_window)
+        file_menu = Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label='File', menu=file_menu)
+        file_menu.add_command(label='Refresh', command=self.refresh_window)
+        file_menu.add_command(label='Settings')
+        file_menu.add_command(label='Exit', command=self.close_window)
         # Create HELP menu bar
         help_menu = Menu(menu_bar, tearoff=0)
-        menu_bar.add_cascade(label = 'Help', menu = help_menu)
-        help_menu.add_command(label = 'About')
-
+        menu_bar.add_cascade(label='Help', menu=help_menu)
+        help_menu.add_command(label='About')
 
     def create_progressbar(self):
-        self.progress_bar = ttk.Progressbar(self, orient = 'horizontal',
-                                            length = 250, mode = 'indeterminate')
+        self.progress_bar = ttk.Progressbar(self, orient='horizontal',
+                                            length=250, mode='indeterminate')
         self.progress_bar.grid(column=2, row=13, pady=10)
         self.progress_bar['value'] = 0
-
 
     def remove_widgets(self):
         for widget in self.winfo_children():
             widget.destroy()
-
 
     def switch_page(self):
         if self.new_page == 'spotify_page':
@@ -109,17 +103,14 @@ class Window(tk.ThemedTk):
             print('download page')
             self.download_page()
 
-
     def refresh_window(self):
         self.destroy()
         self.__init__()
-
 
     def close_window(self):
         self.quit()
         self.destroy()
         exit()
-
 
     def click_search(self):
         if self.entry.get() == '':
@@ -131,15 +122,14 @@ class Window(tk.ThemedTk):
             except:
                 print('valid entry')
             self.search_query = self.entry.get()
-            self.search_btn.configure(text = 'Searching...')
+            self.search_btn.configure(text='Searching...')
             self.search_track()
-
 
     def search_track(self):
         self.results = ad.spotify_search(self.search_query)
         self.search_results = json.loads(self.results[0])
         self.search_status = self.results[1]
-        #print(self.search_results)
+        # print(self.search_results)
         print(self.search_status)
         if self.search_status:
             self.new_page = 'spotify_page'
@@ -149,7 +139,6 @@ class Window(tk.ThemedTk):
             self.label = Label(self, text='Could not find track.')
             self.label.grid(column=2, row=14)
 
-
     def spotify_page(self):
         self.create_canvas()
         self.create_entry()
@@ -157,14 +146,13 @@ class Window(tk.ThemedTk):
         self.create_button()
         self.display_results()
 
-
     def display_results(self):
         self.buttons = []
         self.details = []
         i = -1
         for track in self.search_results:
             i += 1
-            #print(track)
+            # print(track)
             id = track['id']
             artist = track['artist']
             name = track['track']
@@ -174,9 +162,8 @@ class Window(tk.ThemedTk):
             search_text = artist + ' - ' + name
             self.details.append(search_text)
             self.buttons.append(Button(self, text=display_text, width=40,
-                                       command = lambda i=i: self.choose_song(i)))
+                                       command=lambda i=i: self.choose_song(i)))
             self.buttons[i].grid(column=3, row=i+3, sticky='w')
-
 
     def choose_song(self, i):
         self.index = i
@@ -186,13 +173,11 @@ class Window(tk.ThemedTk):
         self.remove_widgets()
         self.switch_page()
 
-
     def download_page(self):
         self.create_canvas()
         self.create_menu()
         self.create_progressbar()
         self.start_search_thread()
-
 
     def start_search_thread(self):
         self.show_text(display_text['searching'])
@@ -205,7 +190,6 @@ class Window(tk.ThemedTk):
         self.search_thread.start()
         self.after(20, self.check_search_thread)
 
-
     def check_search_thread(self):
         if self.search_thread.is_alive():
             self.after(20, self.check_search_thread)
@@ -213,7 +197,6 @@ class Window(tk.ThemedTk):
             self.progress_rush = True
             print('RUSH TO 25!')
             self.compare_audio()
-
 
     def compare_audio(self):
         if self.progress_updating == True:
@@ -223,10 +206,10 @@ class Window(tk.ThemedTk):
             self.progress_part = 2
             self.show_text(display_text['choosing'])
             self.progress_thread = threading.Thread(target=self.progress).start()
-            self.best_choice = ad.match_audio(self.search_str, self.search_results, self.youtube_results, self.index)
+            self.best_choice = ad.match_audio(
+                self.search_str, self.search_results, self.youtube_results, self.index)
             self.output_filename = str(self.best_choice[1])
             self.after(900, self.start_dl_thread)  # pause so display text can be read
-
 
     def start_dl_thread(self):
         if self.progress_updating == True:
@@ -242,7 +225,6 @@ class Window(tk.ThemedTk):
             self.dl_thread.start()
             self.after(20, self.check_dl_thread)
 
-
     def check_dl_thread(self):
         if self.dl_thread.is_alive():
             self.after(20, self.check_dl_thread)
@@ -250,7 +232,6 @@ class Window(tk.ThemedTk):
             print('RUSH TO 85!')
             self.progress_rush = True
             self.apply_media_tags()
-
 
     def apply_media_tags(self):
         if self.progress_updating == True:
@@ -261,9 +242,9 @@ class Window(tk.ThemedTk):
             self.progress_thread = threading.Thread(target=self.progress).start()
             self.show_text(display_text['tags'])
             ad.dl_cover_art(self.index, self.search_results)
-            ad.apply_ID3_tags(self.index, self.search_results, self.output_name, self.output_filename)
+            ad.apply_ID3_tags(self.index, self.search_results,
+                              self.output_name, self.output_filename)
             self.after(20, self.check_dl_complete)
-
 
     def check_dl_complete(self):
         if self.progress_thread.is_alive():
@@ -273,10 +254,8 @@ class Window(tk.ThemedTk):
             self.show_text(display_text['done'])
             self.final()
 
-
     def final(self):
         print('YAY')
-
 
     def progress(self):
         # Searching (0-25)
@@ -302,7 +281,7 @@ class Window(tk.ThemedTk):
         if self.progress_part == 2:
             self.progress_updating = True
             print('starting part 2')
-            for i in range(25,35):
+            for i in range(25, 35):
                 print(i)
                 self.progress_bar['value'] = i
                 self.update_idletasks()
@@ -312,7 +291,7 @@ class Window(tk.ThemedTk):
         if self.progress_part == 3:
             self.progress_updating = True
             print('starting part 3')
-            for i in range(35,85):
+            for i in range(35, 85):
                 current = i
                 print(current)
                 self.progress_bar['value'] = i
@@ -331,32 +310,27 @@ class Window(tk.ThemedTk):
         if self.progress_part == 4:
             self.progress_updating = True
             print('starting part 4')
-            for i in range(85,101):
+            for i in range(85, 101):
                 print(i)
                 self.progress_bar['value'] = i
                 self.update_idletasks()
                 time.sleep(0.05)
             self.progress_updating = False
 
-
     def yt_search(self):
         self.youtube_results = ad.search_youtube(self.search_str)
         print(self.youtube_results)
 
-
     def yt_download(self):
         self.output_name = ad.dl_song(self.best_choice[0])
         self.show_text(display_text['tags'])
-
 
     def show_text(self, alpha_text):
         try:
             self.canvas.delete(self.canvas_text)
         except:
             pass
-        self.canvas_text = self.canvas.create_text(300,390, text = alpha_text, anchor='nw')
-
-
+        self.canvas_text = self.canvas.create_text(300, 390, text=alpha_text, anchor='nw')
 
 
 class EntryWithPlaceholder(Entry):
@@ -384,7 +358,6 @@ class EntryWithPlaceholder(Entry):
     def foc_out(self, *args):
         if not self.get():
             self.put_placeholder()
-
 
 
 if __name__ == "__main__":
