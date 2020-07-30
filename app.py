@@ -3,11 +3,14 @@ import time
 import os
 import json
 import threading
+import concurrent.futures
 from tkinter import *
 from tkinter import ttk
 from ttkthemes import themed_tk as tk
 from PIL import ImageTk, Image
 
+
+# Constants
 
 HEIGHT = 432
 WIDTH = 768
@@ -184,11 +187,10 @@ class Window(tk.ThemedTk):
         self.progress_part = 1
         self.progress_rush = False
         self.progress_updating = False
-        self.progress_thread = threading.Thread(target=self.progress).start()
+        self.progress_thread = threading.Thread(target=self.progress_control).start()
         self.search_thread = threading.Thread(target=self.yt_search)
-        self.search_thread.daemon = True
         self.search_thread.start()
-        self.after(20, self.check_search_thread)
+        self.after(100, self.check_search_thread)
 
     def check_search_thread(self):
         if self.search_thread.is_alive():
@@ -205,31 +207,33 @@ class Window(tk.ThemedTk):
         elif self.progress_updating == False:
             self.progress_part = 2
             self.show_text(display_text['choosing'])
-            self.progress_thread = threading.Thread(target=self.progress).start()
+            self.progress_thread = threading.Thread(target=self.progress_control).start()
             self.best_choice = ad.match_audio(
                 self.search_str, self.search_results, self.youtube_results, self.index)
             self.output_filename = str(self.best_choice[1])
-            self.after(900, self.start_dl_thread)  # pause so display text can be read
+            self.after(100, self.start_dl_thread)  # pause so display text can be read
 
     def start_dl_thread(self):
+        print('progress updating at dl start?', self.progress_updating)
         if self.progress_updating == True:
             print('waiting')
             self.after(80, self.start_dl_thread)
         elif self.progress_updating == False:
-            dl_text = 'Downloading: ' + self.output_filename
-            self.show_text(dl_text)
+            print('STARTING DOWNLOAD')
+            self.show_text(str('Downloading: ' + self.output_filename))
             self.progress_part = 3
-            self.progress_thread = threading.Thread(target=self.progress).start()
-            self.dl_thread = threading.Thread(target=self.yt_download)
-            self.dl_thread.daemon = True
-            self.dl_thread.start()
-            self.after(20, self.check_dl_thread)
+            self.progress_thread = threading.Thread(target=self.progress_control).start()
+            self.dl_thread = threading.Thread(target=self.yt_download).start()
+            #self.dl_thread.daemon = True
+            self.after(100, self.check_dl_thread)
 
     def check_dl_thread(self):
+        print('progress updating at dl check?', self.progress_updating)
+        print('download alive?', self.dl_thread.is_alive())
         if self.dl_thread.is_alive():
             self.after(20, self.check_dl_thread)
         else:
-            print('RUSH TO 85!')
+            print('Download complete. RUSH TO 85!')
             self.progress_rush = True
             self.apply_media_tags()
 
@@ -239,7 +243,7 @@ class Window(tk.ThemedTk):
             self.after(80, self.apply_media_tags)
         elif self.progress_updating == False:
             self.progress_part = 4
-            self.progress_thread = threading.Thread(target=self.progress).start()
+            self.progress_thread = threading.Thread(target=self.progress_control).start()  # HERE
             self.show_text(display_text['tags'])
             ad.dl_cover_art(self.index, self.search_results)
             ad.apply_ID3_tags(self.index, self.search_results,
@@ -257,65 +261,38 @@ class Window(tk.ThemedTk):
     def final(self):
         print('YAY')
 
-    def progress(self):
+    def update_progress(self, start, stop, time_int):
+        self.progress_updating = True
+        for i in range(start, stop):
+            current = i
+            print('normal', current)
+            self.progress_bar['value'] = i
+            self.update_idletasks()
+            time.sleep(time_int)
+            if self.progress_rush:
+                for n in range(current, stop):
+                    print('rush', n)
+                    self.progress_bar['value'] = n
+                    self.update_idletasks()
+                    time.sleep(0.03)
+                self.progress_rush = False
+                break
+        self.progress_updating = False
+
+    def progress_control(self):
         # Searching (0-25)
         if self.progress_part == 1:
-            self.progress_updating = True
             print('starting part 1')
-            for i in range(25):
-                current = i
-                print(current)
-                self.progress_bar['value'] = i
-                self.update_idletasks()
-                time.sleep(0.2)
-                if self.progress_rush:
-                    for n in range(current, 25):
-                        print(n)
-                        self.progress_bar['value'] = n
-                        self.update_idletasks()
-                        time.sleep(0.03)
-                    self.progress_rush = False
-                    break
-            self.progress_updating = False
-        # Choosing (25-35)
+            self.update_progress(0, 25, 0.2)  # start %, stop %, time interval
         if self.progress_part == 2:
-            self.progress_updating = True
             print('starting part 2')
-            for i in range(25, 35):
-                print(i)
-                self.progress_bar['value'] = i
-                self.update_idletasks()
-                time.sleep(0.08)
-            self.progress_updating = False
-        # Downloading (35-85)
+            self.update_progress(25, 35, 0.08)  # start %, stop %, time interval
         if self.progress_part == 3:
-            self.progress_updating = True
             print('starting part 3')
-            for i in range(35, 85):
-                current = i
-                print(current)
-                self.progress_bar['value'] = i
-                self.update_idletasks()
-                time.sleep(0.35)
-                if self.progress_rush:
-                    for n in range(current, 85):
-                        print(n)
-                        self.progress_bar['value'] = n
-                        self.update_idletasks()
-                        time.sleep(0.04)
-                    self.progress_rush = False
-                    break
-            self.progress_updating = False
-        # Applying media (85-100)
+            self.update_progress(35, 85, 0.32)  # start %, stop %, time interval
         if self.progress_part == 4:
-            self.progress_updating = True
             print('starting part 4')
-            for i in range(85, 101):
-                print(i)
-                self.progress_bar['value'] = i
-                self.update_idletasks()
-                time.sleep(0.05)
-            self.progress_updating = False
+            self.update_progress(85, 101, 0.05)  # start %, stop %, time interval
 
     def yt_search(self):
         self.youtube_results = ad.search_youtube(self.search_str)
@@ -323,7 +300,6 @@ class Window(tk.ThemedTk):
 
     def yt_download(self):
         self.output_name = ad.dl_song(self.best_choice[0])
-        self.show_text(display_text['tags'])
 
     def show_text(self, alpha_text):
         try:

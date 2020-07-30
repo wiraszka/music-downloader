@@ -39,7 +39,7 @@ def spotify_search(search_query):
         print('Spotify search successful')
         search_success = True
 
-    # If spotify search successful, return relevant song info for top-10 results in json format
+    # If spotify search successful, return song info for top-10 results in json format
     if search_success == True:
         song_info = []
         count = 0
@@ -58,8 +58,8 @@ def spotify_search(search_query):
             tags['total_tracks'] = song['album']['total_tracks']
             tags['duration_s'] = int(song['duration_ms']) / 1000
             tags['duration'] = str(datetime.timedelta(seconds=tags['duration_s'])).split('.')[0]
-            print(tags['id'], '-', tags['artist'], '-', tags['track'],
-                  '- album:', tags['album'], '- duration:', tags['duration'])
+            print(tags['id'], '-', tags['artist'], '-', tags['track'], '- album:',
+                  tags['album'], '- duration:', tags['duration'])
             song_info.append(tags)
         spotify_summary = json.dumps(song_info, indent=2)
     # print(spotify_summary)
@@ -71,7 +71,7 @@ def search_youtube(search_str):
     youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
     request = youtube.search().list(q=search_str, part='snippet', type='video', maxResults=10)
     results = request.execute()
-# Return video title and url for each result
+    # Return video title and url for each result
     youtube_results = []
     for item in results['items']:
         info = {}
@@ -117,13 +117,13 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
             if 'live' in item['vid_title'].lower():
                 print('DISALLOWED due to live')
                 continue
-# Score youtube results based on duration match
+        # Score youtube results based on duration match
         if search_success == True:
             duration_diff = abs(spotify_summary[index]['duration_s'] - item['duration_s'])
             duration_score = 0.35 * (100 - duration_diff)  # perfect time match is 35 points
             print('Duration score:', duration_score)
 
-# Use fuzzy matching to score similarity
+        # Use fuzzy matching to score similarity between search string and youtube titles
         match_ratio = fuzz.ratio(item['vid_title'], search_str)
         print('Fuzzy score:', match_ratio)
         if search_success == True:
@@ -131,7 +131,7 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
         else:
             match_score = match_ratio
         print('Final matching score:', match_score)
-# Keep track of best youtube result in a dict
+        # Keep track of best youtube result in a dict
         if match_score > vid_list['highest_match']:
             vid_list['best_vid'] = item['vid_title']
             vid_list['best_url'] = item['url']
@@ -163,14 +163,14 @@ def dl_song(chosen_url):
         }],
     }
 
-# Specify output directory for downloads
+    # Specify output directory for downloads
     os.chdir('C:/Users/Adam/Desktop')
     if not os.path.exists('songs'):
         os.mkdir('songs')
     os.chdir('songs')
     #print('cwd is:', os.getcwd())
 
-# Download song from chosen Youtube url
+    # Download song from chosen Youtube url
     with youtube_dl.YoutubeDL(download_options) as dl:
         audio_filename = dl.prepare_filename(dl.extract_info(chosen_url))
         audio_filename = audio_filename.replace('.m4a', '.mp3')
