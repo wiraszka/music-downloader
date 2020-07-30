@@ -18,7 +18,8 @@ WIDTH = 768
 display_text = {'searching': 'Searching for download links...',
                 'found': 'Found download links',
                 'choosing': 'Choosing best download link',
-                'tags': 'Applying media tags and cover art',
+                'cover': 'Downloading cover art',
+                'tags': 'Applying media tags',
                 'finishing': 'Finishing up',
                 'done': 'Done'}
 
@@ -210,11 +211,10 @@ class Window(tk.ThemedTk):
             self.progress_thread = threading.Thread(target=self.progress_control).start()
             self.best_choice = ad.match_audio(
                 self.search_str, self.search_results, self.youtube_results, self.index)
-            self.output_filename = str(self.best_choice[1])
+            self.output_filename = str(self.best_choice[1]) + '.mp3'
             self.after(100, self.start_dl_thread)  # pause so display text can be read
 
     def start_dl_thread(self):
-        print('progress updating at dl start?', self.progress_updating)
         if self.progress_updating == True:
             print('waiting')
             self.after(80, self.start_dl_thread)
@@ -223,36 +223,39 @@ class Window(tk.ThemedTk):
             self.show_text(str('Downloading: ' + self.output_filename))
             self.progress_part = 3
             self.progress_thread = threading.Thread(target=self.progress_control).start()
-            self.dl_thread = threading.Thread(target=self.yt_download).start()
+            self.dl_thread = threading.Thread(target=self.yt_download)
+            self.dl_thread.start()
             #self.dl_thread.daemon = True
             self.after(100, self.check_dl_thread)
 
     def check_dl_thread(self):
-        print('progress updating at dl check?', self.progress_updating)
-        print('download alive?', self.dl_thread.is_alive())
         if self.dl_thread.is_alive():
             self.after(20, self.check_dl_thread)
         else:
             print('Download complete. RUSH TO 85!')
             self.progress_rush = True
-            self.apply_media_tags()
+            self.dl_cover_art()
 
-    def apply_media_tags(self):
+    def dl_cover_art(self):
         if self.progress_updating == True:
             print('waiting')
-            self.after(80, self.apply_media_tags)
+            self.after(80, self.dl_cover_art)
         elif self.progress_updating == False:
             self.progress_part = 4
-            self.progress_thread = threading.Thread(target=self.progress_control).start()  # HERE
-            self.show_text(display_text['tags'])
+            self.progress_thread = threading.Thread(target=self.progress_control).start()
+            self.show_text(display_text['cover'])
             ad.dl_cover_art(self.index, self.search_results)
-            ad.apply_ID3_tags(self.index, self.search_results,
-                              self.output_name, self.output_filename)
-            self.after(20, self.check_dl_complete)
+            self.after(500, self.apply_media_tags)
 
-    def check_dl_complete(self):
+    def apply_media_tags(self):
+        self.show_text(display_text['tags'])
+        ad.apply_ID3_tags(self.index, self.search_results,
+                          self.output_name, self.output_filename)
+        self.check_media_added()
+
+    def check_media_added(self):
         if self.progress_thread.is_alive():
-            self.after(20, self.check_dl_thread)
+            self.after(20, self.check_media_added)
         else:
             print('Download process complete')
             self.show_text(display_text['done'])
