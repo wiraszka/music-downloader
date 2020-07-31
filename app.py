@@ -1,9 +1,7 @@
 import downloader as ad
-import time
 import os
 import json
 import threading
-import concurrent.futures
 from tkinter import *
 from tkinter import ttk
 from ttkthemes import themed_tk as tk
@@ -11,9 +9,10 @@ from PIL import ImageTk, Image
 
 
 # Constants
-
 HEIGHT = 432
 WIDTH = 768
+output_directory = 'C:/Users/Adam/Desktop'  # default output directory
+root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # Where program files reside
 
 display_text = {'searching': 'Searching for download links...',
                 'found': 'Found download links',
@@ -34,10 +33,14 @@ class Window(tk.ThemedTk):
         self.maxsize(WIDTH, HEIGHT)
         self.iconphoto(False, PhotoImage(file='my_icon.png'))
         self.create_canvas()
-        self.create_entry()
-        self.create_button()
-        # self.create_button_img()
         self.create_menu()
+        self.create_entry()
+        self.create_search_button()
+        self.configure_directories()
+
+    def configure_directories(self):
+        self.output_directory = output_directory
+        self.root_directory = root_directory
 
     def create_canvas(self):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
@@ -59,8 +62,9 @@ class Window(tk.ThemedTk):
         self.entry.focus()
         self.entry.grid(column=2, row=13, sticky='ew')
 
-    def create_button(self):
-        self.search_btn = Button(self, text='Search', command=self.click_search)
+    def create_search_button(self):
+        self.bind('<Return>', (lambda event: self.click_search()))
+        self.search_btn = Button(self, text='Search', command=(lambda: self.click_search()))
         self.search_btn.grid(column=3, row=13, sticky='w')
 
     # NOT USED
@@ -99,13 +103,16 @@ class Window(tk.ThemedTk):
         for widget in self.winfo_children():
             widget.destroy()
 
-    def switch_page(self):
-        if self.new_page == 'spotify_page':
+    def switch_page(self, new_page):
+        if new_page == 'spotify_page':
             print('spotify page')
             self.spotify_page()
-        if self.new_page == 'download_page':
+        if new_page == 'download_page':
             print('download page')
             self.download_page()
+        if new_page == 'confirmation_page':
+            print('confirmation page')
+            self.confirmation_page()
 
     def refresh_window(self):
         self.destroy()
@@ -135,11 +142,11 @@ class Window(tk.ThemedTk):
         self.search_status = self.results[1]
         # print(self.search_results)
         print(self.search_status)
-        if self.search_status:
-            self.new_page = 'spotify_page'
+        if self.search_status == True:
             self.remove_widgets()
-            self.switch_page()
+            self.switch_page('spotify_page')
         else:
+            self.search_str = self.search_query
             self.label = Label(self, text='Could not find track.')
             self.label.grid(column=2, row=14)
 
@@ -147,41 +154,84 @@ class Window(tk.ThemedTk):
         self.create_canvas()
         self.create_entry()
         self.create_menu()
-        self.create_button()
+        self.create_search_button()
         self.display_results()
 
     def display_results(self):
         self.buttons = []
         self.details = []
-        i = -1
-        for track in self.search_results:
-            i += 1
+        for i in range(7):  # show top 7 results
+            track = self.search_results[i]
             # print(track)
             id = track['id']
             artist = track['artist']
             name = track['track']
             album = track['album']
             duration = track['duration']
-            display_text = str(id) + ': ' + artist + ' - ' + name + ' - ' + duration
+            display_text = str(id) + ': ' + artist + ' - ' + name + \
+                '\n' + 'Album: ' + album + ' - ' + duration
             search_text = artist + ' - ' + name
             self.details.append(search_text)
-            self.buttons.append(Button(self, text=display_text, width=40,
+            self.buttons.append(Button(self, text=display_text, width=50,
                                        command=lambda i=i: self.choose_song(i)))
-            self.buttons[i].grid(column=3, row=i+3, sticky='w')
+            self.buttons[i].grid(column=2, row=i+5)
 
     def choose_song(self, i):
         self.index = i
         print('user choice:', i)
         self.search_str = self.details[i]
-        self.new_page = 'download_page'
         self.remove_widgets()
-        self.switch_page()
+        self.switch_page('download_page')
 
     def download_page(self):
         self.create_canvas()
         self.create_menu()
         self.create_progressbar()
         self.start_search_thread()
+
+    def update_progress(self, start, stop, time_int):
+        self.progress_updating = True
+        for i in range(start, stop):
+            current = i
+            print('normal', current)
+            self.progress_bar['value'] = i
+            self.update_idletasks()
+            time.sleep(time_int)
+            if self.progress_rush:
+                for n in range(current, stop):
+                    print('rush', n)
+                    self.progress_bar['value'] = n
+                    self.update_idletasks()
+                    time.sleep(0.03)
+                self.progress_rush = False
+                break
+        self.progress_updating = False
+
+    def progress_control(self):
+        # Searching (0-25)
+        if self.progress_part == 1:
+            print('starting part 1')
+            self.update_progress(0, 25, 0.2)  # start %, stop %, time interval
+        if self.progress_part == 2:
+            print('starting part 2')
+            self.update_progress(25, 35, 0.08)  # start %, stop %, time interval
+        if self.progress_part == 3:
+            print('starting part 3')
+            self.update_progress(35, 85, 0.32)  # start %, stop %, time interval
+        if self.progress_part == 4:
+            print('starting part 4')
+            self.update_progress(85, 101, 0.05)  # start %, stop %, time interval
+
+    def show_text(self, alpha_text):
+        try:
+            self.canvas.delete(self.canvas_text)
+        except:
+            print('error, could not remove canvas')
+        self.canvas_text = self.canvas.create_text(300, 390, text=alpha_text, anchor='nw')
+
+    def yt_search(self):
+        self.youtube_results = ad.search_youtube(self.search_str)
+        print(self.youtube_results)
 
     def start_search_thread(self):
         self.show_text(display_text['searching'])
@@ -213,6 +263,9 @@ class Window(tk.ThemedTk):
                 self.search_str, self.search_results, self.youtube_results, self.index)
             self.output_filename = str(self.best_choice[1]) + '.mp3'
             self.after(100, self.start_dl_thread)  # pause so display text can be read
+
+    def yt_download(self):
+        self.output_name = ad.dl_song(self.best_choice[0], self.output_directory)
 
     def start_dl_thread(self):
         if self.progress_updating == True:
@@ -250,93 +303,47 @@ class Window(tk.ThemedTk):
     def apply_media_tags(self):
         self.show_text(display_text['tags'])
         ad.apply_ID3_tags(self.index, self.search_results,
-                          self.output_name, self.output_filename)
-        self.check_media_added()
+                          self.output_name, self.output_filename, self.root_directory)
+        self.after(500, self.check_media_added)
 
     def check_media_added(self):
-        if self.progress_thread.is_alive():
-            self.after(20, self.check_media_added)
-        else:
-            print('Download process complete')
-            self.show_text(display_text['done'])
-            self.final()
+        print('Download process complete')
+        self.show_text(display_text['done'])
+        self.remove_widgets()
+        self.switch_page('confirmation_page')
 
-    def final(self):
-        print('YAY')
+    def confirmation_page(self):
+        print('cwd is:', os.getcwd())
+        self.create_canvas()
+        self.create_menu()
+        self.create_save_button()
+        self.create_discard_button()
+        self.create_proceed_button()
 
-    def update_progress(self, start, stop, time_int):
-        self.progress_updating = True
-        for i in range(start, stop):
-            current = i
-            print('normal', current)
-            self.progress_bar['value'] = i
-            self.update_idletasks()
-            time.sleep(time_int)
-            if self.progress_rush:
-                for n in range(current, stop):
-                    print('rush', n)
-                    self.progress_bar['value'] = n
-                    self.update_idletasks()
-                    time.sleep(0.03)
-                self.progress_rush = False
-                break
-        self.progress_updating = False
+    def create_save_button(self):
+        self.search_btn = Button(self, text='Save Changes',
+                                 command=(lambda: self.click_save()))
+        self.search_btn.grid(column=3, row=13)
 
-    def progress_control(self):
-        # Searching (0-25)
-        if self.progress_part == 1:
-            print('starting part 1')
-            self.update_progress(0, 25, 0.2)  # start %, stop %, time interval
-        if self.progress_part == 2:
-            print('starting part 2')
-            self.update_progress(25, 35, 0.08)  # start %, stop %, time interval
-        if self.progress_part == 3:
-            print('starting part 3')
-            self.update_progress(35, 85, 0.32)  # start %, stop %, time interval
-        if self.progress_part == 4:
-            print('starting part 4')
-            self.update_progress(85, 101, 0.05)  # start %, stop %, time interval
+    def create_discard_button(self):
+        self.search_btn = Button(self, text='Discard Changes',
+                                 command=(lambda: self.click_discard()))
+        self.search_btn.grid(column=2, row=13)
 
-    def yt_search(self):
-        self.youtube_results = ad.search_youtube(self.search_str)
-        print(self.youtube_results)
+    def create_proceed_button(self):
+        self.bind('<Return>', (lambda event: self.click_proceed()))
+        self.search_btn = Button(self, text='Discard Changes',
+                                 command=(lambda: self.click_proceed()))
+        self.search_btn.grid(column=4, row=13)
 
-    def yt_download(self):
-        self.output_name = ad.dl_song(self.best_choice[0])
+    def click_save(self):
+        self.refresh_window()
 
-    def show_text(self, alpha_text):
-        try:
-            self.canvas.delete(self.canvas_text)
-        except:
-            pass
-        self.canvas_text = self.canvas.create_text(300, 390, text=alpha_text, anchor='nw')
+    def click_discard(self):
+        self.refresh_window()
 
-
-class EntryWithPlaceholder(Entry):
-    def __init__(self, master=None, placeholder='Enter song name', color='grey'):
-        super().__init__(master)
-
-        self.placeholder = placeholder
-        self.placeholder_color = color
-        self.default_fg_color = self['fg']
-
-        self.bind("<FocusIn>", self.foc_in)
-        self.bind("<FocusOut>", self.foc_out)
-
-        self.put_placeholder()
-
-    def put_placeholder(self):
-        self.insert(0, self.placeholder)
-        self['fg'] = self.placeholder_color
-
-    def foc_in(self, *args):
-        if self['fg'] == self.placeholder_color:
-            self.delete('0', 'end')
-            self['fg'] = self.default_fg_color
-
-    def foc_out(self, *args):
-        if not self.get():
-            self.put_placeholder()
+    def click_proceed(self):
+        self.refresh_window()
 
 
 if __name__ == "__main__":

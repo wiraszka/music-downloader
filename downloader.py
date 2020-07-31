@@ -6,7 +6,6 @@ import json
 import os
 import re
 import spotipy
-import time
 import spotipy.util as util
 import urllib.request
 import youtube_dl
@@ -28,7 +27,7 @@ def spotify_search(search_query):
 
     # Input song name and search spotify
     print('Searching for:', search_query)
-    result = spotify.search(search_query, limit=10)
+    result = spotify.search(search_query, limit=13)
     spotify_summary = None
     # print(json.loads(result, indent=2)
 
@@ -40,7 +39,7 @@ def spotify_search(search_query):
         print('Spotify search successful')
         search_success = True
 
-    # If spotify search successful, return song info for top-10 results in json format
+    # If spotify search successful, return relevant song info for top-10 results in json format
     if search_success == True:
         song_info = []
         count = 0
@@ -59,8 +58,8 @@ def spotify_search(search_query):
             tags['total_tracks'] = song['album']['total_tracks']
             tags['duration_s'] = int(song['duration_ms']) / 1000
             tags['duration'] = str(datetime.timedelta(seconds=tags['duration_s'])).split('.')[0]
-            print(tags['id'], '-', tags['artist'], '-', tags['track'], '- album:',
-                  tags['album'], '- duration:', tags['duration'])
+            print(tags['id'], '-', tags['artist'], '-', tags['track'],
+                  '- album:', tags['album'], '- duration:', tags['duration'])
             song_info.append(tags)
         spotify_summary = json.dumps(song_info, indent=2)
     # print(spotify_summary)
@@ -74,6 +73,7 @@ def search_youtube(search_str):
     results = request.execute()
     # Return video title and url for each result
     youtube_results = []
+    print('Searching Youtube for:', search_str)
     for item in results['items']:
         info = {}
         info['vid_title'] = html.unescape(item['snippet']['title'])
@@ -98,40 +98,53 @@ def search_youtube(search_str):
     return youtube_results
 
 
+def filter_entries(search_str, item):
+    '''Remove videos such as covers, live recordingss/performances
+    unless explicitly asked for in search string'''
+    disallowed = False
+    print('-' * 80)
+    print('Analyzing:', item['vid_title'], item['duration'])
+    if 'cover' not in search_str:
+        if 'cover' in item['vid_title'].lower():
+            print('DISALLOWED due to cover')
+            disallowed = True
+    if 'live' not in search_str:
+        if 'live' in item['vid_title'].lower():
+            print('DISALLOWED due to live')
+            disallowed = True
+    return disallowed
+
+
 def match_audio(search_str, spotify_summary, youtube_results, index):
-    search_success = True  # THIS IS A PLACE HOLDER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     matched = False
-    vid_list = {
-        'best_vid': '',
-        'best_url': '',
-        'highest_match': 0
-    }
+    vid_list = {'highest_match': 0}
     for item in youtube_results:
-        # Remove videos such as covers, live recordingss/performances unless explicitly asked for in search string
-        print('-' * 60)
-        print('Analyzing:', item['vid_title'], item['duration'])
-        if 'cover' not in search_str:
-            if 'cover' in item['vid_title'].lower():
-                print('DISALLOWED due to cover')
-                continue
-        if 'live' not in search_str:
-            if 'live' in item['vid_title'].lower():
-                print('DISALLOWED due to live')
-                continue
+        disallowed = filter_entries(search_str, item)
+        if disallowed:
+            continue
         # Score youtube results based on duration match
-        if search_success == True:
-            duration_diff = abs(spotify_summary[index]['duration_s'] - item['duration_s'])
-            duration_score = 0.35 * (100 - duration_diff)  # perfect time match is 35 points
-            print('Duration score:', duration_score)
+        duration_diff = abs(spotify_summary[index]['duration_s'] -
+                            item['duration_s'])  # calculate time difference
+        duration_score = 0.35 * (100 - duration_diff)  # perfect time match is 35 points
+        print('Duration difference:', duration_diff)
+        print('Duration score:', duration_score)
 
         # Use fuzzy matching to score similarity between search string and youtube titles
         match_ratio = fuzz.ratio(item['vid_title'], search_str)
+        match_score = match_ratio*0.65 + duration_score  # perfect fuzzy match is 65 points
         print('Fuzzy score:', match_ratio)
-        if search_success == True:
-            match_score = match_ratio*0.65 + duration_score  # perfect fuzzy match is 65 points
-        else:
-            match_score = match_ratio
         print('Final matching score:', match_score)
+
+        item['duration_diff'] = duration_diff
+        item['fuzzy_score'] = match_score
+
+        # Choose video if length is within 1 sec and fuzzy match above 65
+        if duration_diff < 1.2 and match_ratio > 65:
+            chosen_url = item['url']
+            chosen_video = item['vid_title']
+            print('MATCHED EARLY')
+            return chosen_url, chosen_video
+
         # Keep track of best youtube result in a dict
         if match_score > vid_list['highest_match']:
             vid_list['best_vid'] = item['vid_title']
@@ -145,13 +158,13 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
     if matched == False:
         chosen_url = vid_list['best_url']
         chosen_video = vid_list['best_vid']
-    print('=' * 60)
+    print('=' * 80)
     print('Chosen download link:', chosen_video)
-    print('=' * 60)
+    print('=' * 80)
     return chosen_url, chosen_video
 
 
-def dl_song(chosen_url):
+def dl_song(chosen_url, output_directory):
     # Youtube_dl parameters config
     download_options = {
         'format': 'bestaudio/best',
@@ -165,7 +178,7 @@ def dl_song(chosen_url):
     }
 
     # Specify output directory for downloads
-    os.chdir('C:/Users/Adam/Desktop')
+    os.chdir(output_directory)
     if not os.path.exists('songs'):
         os.mkdir('songs')
     os.chdir('songs')
@@ -189,7 +202,7 @@ def dl_cover_art(index, spotify_summary):
     response = urllib.request.urlretrieve(spotify_summary[index]['album_art'], image_file)
 
 
-def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename):
+def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root_directory):
     # Rename audio file to 'temp.mp3' because file might have non-ascii characters (eyed3 cannot handle these)
     try:
         if os.path.exists('temp.mp3'):
@@ -208,6 +221,7 @@ def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename):
         apply_tags.tag.save()
         print('Media tags and album art applied to audio file')
         os.rename('temp.mp3', output_filename)
+        os.chdir(root_directory)
     except:
         print('Could not apply media tags to file')
-        os.chdir('../../')
+        os.chdir(root_directory)
