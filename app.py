@@ -1,6 +1,12 @@
+"""
+Author: Adam Wiraszka
+Date Started: July 17 2020
+"""
+
 import downloader as ad
 import os
 import json
+import time
 import threading
 from tkinter import *
 from tkinter import ttk
@@ -22,29 +28,33 @@ display_text = {'searching': 'Searching for download links...',
                 'finishing': 'Finishing up',
                 'done': 'Done'}
 
+# clearlooks for progress bar
+# arc for buttons
+
 
 class Window(tk.ThemedTk):
     def __init__(self):
         super(Window, self).__init__()
         self.title("Adam's Bomb Ass Music Downloader")
         # print(self.get_themes())
-        self.set_theme('clearlooks')
+        self.set_theme('arc')  # clearlooks, plastik, arc
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
         self.iconphoto(False, PhotoImage(file='my_icon.png'))
-        self.create_canvas()
+        self.create_canvas(15, 5)  # number of rows & columns in grid
         self.create_menu()
-        self.create_entry()
-        self.create_search_button()
+        self.create_entry(13, 2)  # row, column
+        self.create_search_button(13, 3)  # row, column
+        # self.create_button_img()
         self.configure_directories()
 
     def configure_directories(self):
         self.output_directory = output_directory
         self.root_directory = root_directory
 
-    def create_canvas(self):
+    def create_canvas(self, rows, cols):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
-        self.canvas.grid(column=0, row=0, rowspan=15, columnspan=5)
+        self.canvas.grid(column=0, row=0, rowspan=rows, columnspan=cols)
         img_main = Image.open('bg_main.jpg')
         resized = img_main.resize((WIDTH, HEIGHT), Image.ANTIALIAS)
         self.canvas.image = ImageTk.PhotoImage(resized)
@@ -56,16 +66,16 @@ class Window(tk.ThemedTk):
         label.config(font=label_font)
         label.grid(column=2, row=15)
 
-    def create_entry(self):
+    def create_entry(self, row, col):
         self.input = StringVar()
         self.entry = ttk.Entry(self, textvariable=self.input, width=40)
         self.entry.focus()
-        self.entry.grid(column=2, row=13, sticky='ew')
+        self.entry.grid(column=col, row=row, sticky='ew')  # 2, 13
 
-    def create_search_button(self):
+    def create_search_button(self, row, col):
         self.bind('<Return>', (lambda event: self.click_search()))
-        self.search_btn = Button(self, text='Search', command=(lambda: self.click_search()))
-        self.search_btn.grid(column=3, row=13, sticky='w')
+        self.search_btn = ttk.Button(self, text='Search', command=(lambda: self.click_search()))
+        self.search_btn.grid(column=col, row=row, sticky='w')  # 3, 13
 
     # NOT USED
     def create_button_img(self):
@@ -73,10 +83,11 @@ class Window(tk.ThemedTk):
         print(im.mode)
         if 'transparency' in im.info:
             print('transparent!')
+        self.bind('<Return>', (lambda event: self.click_search()))
         self.button_img = PhotoImage(file='search_button_small.png')
         self.button_img_resized = self.button_img.subsample(2, 2)
         self.search_btn = Button(self, image=self.button_img_resized,
-                                 command=self.click_search, borderwidth=0)
+                                 command=(lambda: self.click_search()))
         self.search_btn.grid(column=3, row=13, sticky='w')
 
     def create_menu(self):
@@ -125,11 +136,10 @@ class Window(tk.ThemedTk):
 
     def click_search(self):
         if self.entry.get() == '':
-            self.invalid_label = Label(self, text='invalid entry.')
-            self.invalid_label.grid(column=2, row=14)
+            self.show_text('Invalid Entry', 346, 394)
         else:
             try:
-                self.invalid_label.grid_forget()
+                self.canvas.delete(self.canvas_text)
             except:
                 print('valid entry')
             self.search_query = self.entry.get()
@@ -151,10 +161,10 @@ class Window(tk.ThemedTk):
             self.label.grid(column=2, row=14)
 
     def spotify_page(self):
-        self.create_canvas()
-        self.create_entry()
+        self.create_canvas(15, 7)
+        self.create_entry(13, 3)
         self.create_menu()
-        self.create_search_button()
+        self.create_search_button(13, 4)
         self.display_results()
 
     def display_results(self):
@@ -172,9 +182,9 @@ class Window(tk.ThemedTk):
                 '\n' + 'Album: ' + album + ' - ' + duration
             search_text = artist + ' - ' + name
             self.details.append(search_text)
-            self.buttons.append(Button(self, text=display_text, width=50,
-                                       command=lambda i=i: self.choose_song(i)))
-            self.buttons[i].grid(column=2, row=i+5)
+            self.buttons.append(ttk.Button(self, text=display_text, width=60,
+                                           command=lambda i=i: self.choose_song(i)))
+            self.buttons[i].grid(column=2, row=i+5, columnspan=3)
 
     def choose_song(self, i):
         self.index = i
@@ -184,7 +194,8 @@ class Window(tk.ThemedTk):
         self.switch_page('download_page')
 
     def download_page(self):
-        self.create_canvas()
+        self.set_theme('clearlooks')
+        self.create_canvas(15, 5)
         self.create_menu()
         self.create_progressbar()
         self.start_search_thread()
@@ -211,30 +222,30 @@ class Window(tk.ThemedTk):
         # Searching (0-25)
         if self.progress_part == 1:
             print('starting part 1')
-            self.update_progress(0, 25, 0.2)  # start %, stop %, time interval
+            self.update_progress(0, 25, 0.2)  # start %, stop %, time interval between %
         if self.progress_part == 2:
             print('starting part 2')
             self.update_progress(25, 35, 0.08)  # start %, stop %, time interval
         if self.progress_part == 3:
             print('starting part 3')
-            self.update_progress(35, 85, 0.32)  # start %, stop %, time interval
+            self.update_progress(35, 85, 0.3)  # start %, stop %, time interval
         if self.progress_part == 4:
             print('starting part 4')
             self.update_progress(85, 101, 0.05)  # start %, stop %, time interval
 
-    def show_text(self, alpha_text):
+    def show_text(self, alpha_text, xpixel, ypixel):
         try:
             self.canvas.delete(self.canvas_text)
         except:
             print('error, could not remove canvas')
-        self.canvas_text = self.canvas.create_text(300, 390, text=alpha_text, anchor='nw')
+        self.canvas_text = self.canvas.create_text(xpixel, ypixel, text=alpha_text, anchor='nw')
 
     def yt_search(self):
         self.youtube_results = ad.search_youtube(self.search_str)
         print(self.youtube_results)
 
     def start_search_thread(self):
-        self.show_text(display_text['searching'])
+        self.show_text(display_text['searching'], 300, 395)
         self.progress_part = 1
         self.progress_rush = False
         self.progress_updating = False
@@ -257,7 +268,7 @@ class Window(tk.ThemedTk):
             self.after(80, self.compare_audio)
         elif self.progress_updating == False:
             self.progress_part = 2
-            self.show_text(display_text['choosing'])
+            self.show_text(display_text['choosing'], 300, 395)
             self.progress_thread = threading.Thread(target=self.progress_control).start()
             self.best_choice = ad.match_audio(
                 self.search_str, self.search_results, self.youtube_results, self.index)
@@ -273,7 +284,7 @@ class Window(tk.ThemedTk):
             self.after(80, self.start_dl_thread)
         elif self.progress_updating == False:
             print('STARTING DOWNLOAD')
-            self.show_text(str('Downloading: ' + self.output_filename))
+            self.show_text(str('Downloading: ' + self.output_filename), 300, 395)
             self.progress_part = 3
             self.progress_thread = threading.Thread(target=self.progress_control).start()
             self.dl_thread = threading.Thread(target=self.yt_download)
@@ -296,44 +307,45 @@ class Window(tk.ThemedTk):
         elif self.progress_updating == False:
             self.progress_part = 4
             self.progress_thread = threading.Thread(target=self.progress_control).start()
-            self.show_text(display_text['cover'])
+            self.show_text(display_text['cover'], 300, 395)
             ad.dl_cover_art(self.index, self.search_results)
             self.after(500, self.apply_media_tags)
 
     def apply_media_tags(self):
-        self.show_text(display_text['tags'])
+        self.show_text(display_text['tags'], 300, 395)
         ad.apply_ID3_tags(self.index, self.search_results,
                           self.output_name, self.output_filename, self.root_directory)
         self.after(500, self.check_media_added)
 
     def check_media_added(self):
         print('Download process complete')
-        self.show_text(display_text['done'])
-        self.remove_widgets()
+        self.show_text(display_text['done'], 300, 395)
+        self.after(400, remove_widgets)
         self.switch_page('confirmation_page')
 
     def confirmation_page(self):
         print('cwd is:', os.getcwd())
-        self.create_canvas()
+        self.set_theme('arc')
+        self.create_canvas(15, 5)
         self.create_menu()
         self.create_save_button()
         self.create_discard_button()
         self.create_proceed_button()
 
     def create_save_button(self):
-        self.search_btn = Button(self, text='Save Changes',
-                                 command=(lambda: self.click_save()))
+        self.search_btn = ttk.Button(self, text='Save Changes',
+                                     command=(lambda: self.click_save()))
         self.search_btn.grid(column=3, row=13)
 
     def create_discard_button(self):
-        self.search_btn = Button(self, text='Discard Changes',
-                                 command=(lambda: self.click_discard()))
+        self.search_btn = ttk.Button(self, text='Discard Changes',
+                                     command=(lambda: self.click_discard()))
         self.search_btn.grid(column=2, row=13)
 
     def create_proceed_button(self):
         self.bind('<Return>', (lambda event: self.click_proceed()))
-        self.search_btn = Button(self, text='Discard Changes',
-                                 command=(lambda: self.click_proceed()))
+        self.search_btn = ttk.Button(self, text='Proceed',
+                                     command=(lambda: self.click_proceed()))
         self.search_btn.grid(column=4, row=13)
 
     def click_save(self):
