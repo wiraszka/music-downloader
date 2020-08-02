@@ -224,9 +224,9 @@ def dl_song(chosen_url, output_directory):
 
 def dl_cover_art(index, spotify_summary):
     # Download cover art
-    if os.path.exists('img.png'):
-        os.remove('img.png')
-    image_file = 'img.png'.format(0)
+    if os.path.exists(f'img{index}.png'):
+        os.remove(f'img{index}.png')
+    image_file = f'img{index}.png'.format(0)
     response = urllib.request.urlretrieve(spotify_summary[index]['album_art'], image_file)
 
 

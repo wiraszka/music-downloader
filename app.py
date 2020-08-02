@@ -20,16 +20,12 @@ HEIGHT = 432
 WIDTH = 768
 output_directory = 'C:/Users/Adam/Desktop'  # default output directory
 root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # Where program files reside
-display_text = {'searching': 'Searching for download links...',
-                'found': 'Found download links',
-                'choosing': 'Choosing best download link',
-                'cover': 'Downloading cover art',
-                'tags': 'Applying media tags',
-                'finishing': 'Finishing up',
-                'done': 'Done'}
-
-# use 'clearlooks' for progress bar
-# use 'arc' for buttons
+progress_text = {'searching': 'Searching for download links...',
+                 'found': 'Found download links',
+                 'choosing': 'Choosing best download link',
+                 'cover': 'Downloading cover art',
+                 'tags': 'Applying media tags',
+                 'finishing': 'Finishing up'}
 
 
 class Window(tk.ThemedTk):
@@ -45,7 +41,6 @@ class Window(tk.ThemedTk):
         self.create_menu()
         self.create_entry(13, 2)  # row, column
         self.create_search_button(13, 3)  # row, column
-        # self.create_button_img()
         self.configure_directories()
 
     def configure_directories(self):
@@ -173,54 +168,68 @@ class Window(tk.ThemedTk):
         else:
             print('cancelled search')
 
+# =================================================================================================
+
     def spotify_page(self):
         self.create_canvas(15, 7)
-        self.create_entry(11, 3)
         self.create_menu()
-        self.create_search_button(11, 4)
-        self.display_results()
+        self.dl_albums_thread = threading.Thread(target=self.sp_albums)
+        self.dl_albums_thread.start()
+        self.after(100, self.check_sp_albums)
 
-    def dl_albums(self, i):
-        print('downloading cover art image')
-        ad.dl_cover_art(i, self.search_results)
-        cover = Image.open('img.png')  # cover art: 640 x 640
-        cover_resized = cover.resize((42, 42), Image.ANTIALIAS)
-        print('resized image')
-        self.cover_img = ImageTk.PhotoImage(cover_resized)
-        self.albums = Label(self.track_frame, image=self.cover_img)
-        self.albums.grid(column=2, row=i+3)
-        # self.album.lift()
+    def sp_albums(self):
+        for i in range(7):
+            print('downloading cover art image')
+            ad.dl_cover_art(i, self.search_results)
 
-    def dl_results(self):
-        pass
+    def check_sp_albums(self):
+        if self.dl_albums_thread.is_alive():
+            print('waiting for albums to download')
+            self.after(400, self.check_sp_albums)
+        else:
+            self.sp_results()
+            self.display_results()
+            self.create_search_button(11, 4)
+            self.create_entry(11, 3)
+
+    def sp_results(self):
+        self.search_details = []
+        self.search_info = []
+        for i in range(7):  # show top 7 results
+            track = self.search_results[i]
+            display_text = str(track['id']) + ': ' + track['artist'] + ' - ' + track['track'] + \
+                '\n' + 'Album: ' + track['album'] + ' - ' + track['duration']
+            search_text = track['artist'] + ' - ' + track['track']
+            self.search_details.append(search_text)
+            self.search_info.append(display_text)
 
     def display_results(self):
         self.buttons = []
-        self.details = []
-        for i in range(7):  # show top 7 results
-            track = self.search_results[i]
-            id = track['id']
-            artist = track['artist']
-            name = track['track']
-            album = track['album']
-            duration = track['duration']
-            display_text = str(id) + ': ' + artist + ' - ' + name + \
-                '\n' + 'Album: ' + album + ' - ' + duration
-            search_text = artist + ' - ' + name
-            self.details.append(search_text)
-            self.track_frame = Frame(self)
-            self.track_frame.grid(column=2, row=i+3, columnspan=3)
-            self.dl_albums(i)
-            self.buttons.append(ttk.Button(self.track_frame, text=display_text, width=60,
+        self.albums = []
+        for i in range(7):
+            self.spotify_frame = Frame(self)
+            self.spotify_frame.grid(column=2, row=i+3, columnspan=3)
+            self.buttons.append(ttk.Button(self.spotify_frame, text=self.search_info[i], width=60,
                                            command=lambda i=i: self.choose_song(i)))
             self.buttons[i].grid(column=3, row=i+3, columnspan=2)
+            cover = Image.open(f'img{i}.png')  # cover art dimensions: 640 x 640
+            cover_resized = cover.resize((42, 42), Image.ANTIALIAS)  # resize to 42 x 42
+            print('resized image')
+            cover_img = ImageTk.PhotoImage(cover_resized)
+            self.album_label = Label(self.spotify_frame)
+            self.album_label.image = cover_img  # anchor image
+            self.album_label.configure(image=cover_img)  # set image on label
+            self.albums.append(self.album_label)
+            self.albums[i].grid(column=2, row=i+3)
 
     def choose_song(self, i):
         self.index = i
         print('user choice:', i)
-        self.search_str = self.details[i]
+        self.search_str = self.search_details[i]
         self.remove_widgets()
         self.switch_page('download_page')
+
+# =================================================================================================
 
     def download_page(self):
         self.set_theme('clearlooks')
@@ -267,7 +276,7 @@ class Window(tk.ThemedTk):
         print(self.youtube_results)
 
     def start_search_thread(self):
-        self.show_text(display_text['searching'], 305, 395)
+        self.show_text(progress_text['searching'], 305, 395)
         self.progress_part = 1
         self.progress_rush = False
         self.progress_updating = False
@@ -290,8 +299,8 @@ class Window(tk.ThemedTk):
             self.after(80, self.compare_audio)
         elif self.progress_updating == False:
             self.progress_part = 2
-            self.center_text(display_text['choosing'])
-            self.show_text(display_text['choosing'], self.x_display, 395)
+            self.center_text(progress_text['choosing'])
+            self.show_text(progress_text['choosing'], self.x_display, 395)
             self.progress_thread = threading.Thread(target=self.progress_control).start()
 
             if self.search_status == True:
@@ -343,14 +352,14 @@ class Window(tk.ThemedTk):
         elif self.progress_updating == False:
             self.progress_part = 4
             self.progress_thread = threading.Thread(target=self.progress_control).start()
-            self.center_text(display_text['cover'])
-            self.show_text(display_text['cover'], self.x_display, 395)
+            self.center_text(progress_text['cover'])
+            self.show_text(progress_text['cover'], self.x_display, 395)
             ad.dl_cover_art(self.index, self.search_results)
             self.after(500, self.apply_media_tags)
 
     def apply_media_tags(self):
-        self.center_text(display_text['tags'])
-        self.show_text(display_text['tags'], self.x_display, 395)
+        self.center_text(progress_text['tags'])
+        self.show_text(progress_text['tags'], self.x_display, 395)
         ad.apply_ID3_tags(self.index, self.search_results,
                           self.output_name, self.output_filename, self.root_directory)
         self.after(500, self.check_media_added)
