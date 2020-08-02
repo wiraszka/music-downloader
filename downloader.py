@@ -115,6 +115,34 @@ def filter_entries(search_str, item):
     return disallowed
 
 
+def match_string_only(search_str, youtube_results):
+    matched = False
+    vid_list = {'highest_match': 0}
+    for item in youtube_results:
+        disallowed = filter_entries(search_str, item)
+        if disallowed:
+            continue
+        match_score = fuzz.ratio(item['vid_title'], search_str)
+        print('Fuzzy score:', match_score)
+        item['fuzzy_score'] = match_score
+        if match_score > vid_list['highest_match']:
+            vid_list['best_vid'] = item['vid_title']
+            vid_list['best_url'] = item['url']
+            vid_list['highest_match'] = match_score
+        #print('current best match is:', vid_list)
+        if match_score > 95:
+            matched = True
+            chosen_url = item['url']
+            chosen_video = item['vid_title']
+    if matched == False:
+        chosen_url = vid_list['best_url']
+        chosen_video = vid_list['best_vid']
+    print('=' * 80)
+    print('Chosen download link:', chosen_video)
+    print('=' * 80)
+    return chosen_url, chosen_video
+
+
 def match_audio(search_str, spotify_summary, youtube_results, index):
     matched = False
     vid_list = {'highest_match': 0}
