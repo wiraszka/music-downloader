@@ -159,7 +159,7 @@ class Window(tk.ThemedTk):
         self.center_text('Could not find track')
         self.show_text('Could not find track', self.x_display, 395)
         self.continue_anyways = messagebox.askokcancel(
-            'Confirmation', 'Could not find track information.\nDo you wish to download anyways?')
+            'Confirmation', 'Could not find track information.\nDownload audio anyways?')
         print('outcome is', self.continue_anyways)
         if self.continue_anyways:
             self.search_str = self.search_query
@@ -173,9 +173,27 @@ class Window(tk.ThemedTk):
     def spotify_page(self):
         self.create_canvas(15, 7)
         self.create_menu()
+        self.sp_status = True
+        self.search_animation_thread = threading.Thread(target=self.searching_animation)
+        self.search_animation_thread.start()
         self.dl_albums_thread = threading.Thread(target=self.sp_albums)
         self.dl_albums_thread.start()
         self.after(100, self.check_sp_albums)
+
+    def searching_animation(self):
+        self.x_display = 349
+        while self.sp_status == True:
+            self.show_text('Searching', self.x_display, 395)
+            time.sleep(0.3)
+            self.show_text('Searching.', self.x_display, 395)
+            time.sleep(0.3)
+            self.show_text('Searching..', self.x_display, 395)
+            time.sleep(0.3)
+            self.show_text('Searching...', self.x_display, 395)
+            time.sleep(0.3)
+        else:
+            print('done search process')
+            self.canvas.delete(self.canvas_text)
 
     def sp_albums(self):
         for i in range(7):
@@ -187,6 +205,7 @@ class Window(tk.ThemedTk):
             print('waiting for albums to download')
             self.after(400, self.check_sp_albums)
         else:
+            self.sp_status = False
             self.sp_results()
             self.display_results()
             self.create_search_button(11, 4)
@@ -197,11 +216,12 @@ class Window(tk.ThemedTk):
         self.search_info = []
         for i in range(7):  # show top 7 results
             track = self.search_results[i]
+            search_text = track['artist'] + ' - ' + track['track']
             display_text = str(track['id']) + ': ' + track['artist'] + ' - ' + track['track'] + \
                 '\n' + 'Album: ' + track['album'] + ' - ' + track['duration']
-            search_text = track['artist'] + ' - ' + track['track']
+            display_text_centered = ad.modify_text(display_text)
             self.search_details.append(search_text)
-            self.search_info.append(display_text)
+            self.search_info.append(display_text_centered)
 
     def display_results(self):
         self.buttons = []
@@ -212,13 +232,11 @@ class Window(tk.ThemedTk):
             self.buttons.append(ttk.Button(self.spotify_frame, text=self.search_info[i], width=60,
                                            command=lambda i=i: self.choose_song(i)))
             self.buttons[i].grid(column=3, row=i+3, columnspan=2)
-            cover = Image.open(f'img{i}.png')  # cover art dimensions: 640 x 640
-            cover_resized = cover.resize((42, 42), Image.ANTIALIAS)  # resize to 42 x 42
-            print('resized image')
-            cover_img = ImageTk.PhotoImage(cover_resized)
-            self.album_label = Label(self.spotify_frame)
-            self.album_label.image = cover_img  # anchor image
-            self.album_label.configure(image=cover_img)  # set image on label
+            file = f'img{i}.png'  # cover art dimensions: 640 x 640
+            cover_resized = self.resize_cover_art(42, 42, file)  # resize to 42 x 42
+            self.album_label = Label(self.spotify_frame)  # create label
+            self.album_label.image = cover_resized  # anchor image
+            self.album_label.configure(image=cover_resized)  # set image on label
             self.albums.append(self.album_label)
             self.albums[i].grid(column=2, row=i+3)
 
@@ -242,13 +260,13 @@ class Window(tk.ThemedTk):
         self.progress_updating = True
         for i in range(start, stop):
             current = i
-            print('normal', current)
+            print('progress:', current)
             self.progress_bar['value'] = i
             self.update_idletasks()
             time.sleep(time_int)
             if self.progress_rush:
                 for n in range(current, stop):
-                    print('rush', n)
+                    print('rush:', n)
                     self.progress_bar['value'] = n
                     self.update_idletasks()
                     time.sleep(0.03)
@@ -379,7 +397,7 @@ class Window(tk.ThemedTk):
         # self.create_discard_button()
         # self.create_proceed_button()
         self.create_display_frame()
-        self.create_test_buttons()
+        # self.create_test_buttons()
 
     def create_test_buttons(self):
         self.test_buttons = []
@@ -390,32 +408,74 @@ class Window(tk.ThemedTk):
                                                 command=lambda i=i: self.choose_song(i)))
             self.test_buttons[i].grid(column=i, row=14)
 
-    def create_display_frame(self):
-        self.display_frame = Frame(self)
-        self.display_album = Label(self.display_frame, text='album', bg='red')
-        self.display_info1 = Label(self.display_frame, text='track info', bg='blue')
-        self.display_info2 = Label(self.display_frame, text='file info', bg='green')
+    def resize_cover_art(self, width, height, file):
+        cover = Image.open(file)  # cover art dimensions: 640 x 640
+        cover_resized = cover.resize((width, height), Image.ANTIALIAS)  # resize to 42 x 42
+        print('resized image to:', width, 'x', height)
+        cover_img = ImageTk.PhotoImage(cover_resized)
+        return cover_img
 
-        self.display_frame.grid(row=3, column=3, rowspan=9, columnspan=3)
-        self.display_album.grid(row=3, column=3, padx=30, pady=30)
-        self.display_info1.grid(row=3, column=4, rowspan=9, columnspan=2, sticky='nsew')
-        self.display_info2.grid(row=4, column=3, rowspan=7, columnspan=3, sticky='nsew')
+    def create_display_frame(self):
+        # Create new frame
+        self.display_frame = Frame(self, height=400, width=450)  # 320
+        self.display_frame.grid(row=3, column=1, rowspan=10, columnspan=10)
+        # Create album cover label (TOP LEFT)
+        self.display_album = Label(self.display_frame, padx=15, pady=15)
+        # Create text labels (BOTTOM LEFT)
+        self.display_duration = Label(self.display_frame, text='Duration:')
+        self.display_bitrate = Label(self.display_frame, text='Bitrate:')
+        # Create entry fields (RIGHT SIDE)
+        self.entry_artist = ttk.Entry(self.display_frame, width=40)
+        self.entry_artist.insert(0, self.search_results[self.index]['artist'])
+        self.entry_track = ttk.Entry(self.display_frame, width=40)
+        self.entry_track.insert(0, self.search_results[self.index]['track'])
+        self.entry_album_name = ttk.Entry(self.display_frame, width=40)
+        self.entry_album_name.insert(0, self.search_results[self.index]['album'])
+        self.entry_genre = ttk.Entry(self.display_frame, width=40)
+        # Create text labels (RIGHT SIDE)
+        self.display_artist = Label(self.display_frame, text='Artist:', anchor='nw')
+        self.display_track = Label(self.display_frame, text='Song:', anchor='nw')
+        self.display_album_name = Label(self.display_frame, text='Album:', anchor='nw')
+        self.display_genre = Label(self.display_frame, text='Genre:', anchor='nw')
+
+        # Show album cover on label
+        cover = f'img{self.index}.png'  # cover art dimensions: 640 x 640
+        cover_resized = self.resize_cover_art(200, 200, cover)  # resize to 80 x 80
+        self.display_album.image = cover_resized  # anchor image
+        self.display_album.configure(image=cover_resized)  # set image on label
+
+        # Set widgets on parent frame
+        self.display_album.grid(row=0, column=0, rowspan=6, columnspan=6)
+        self.display_artist.grid(row=0, column=6, columnspan=5)
+        self.entry_artist.grid(row=1, column=6, columnspan=5)
+        self.display_track.grid(row=2, column=6, columnspan=5)
+        self.entry_track.grid(row=3, column=6, columnspan=5)
+        self.display_album_name.grid(row=4, column=6, columnspan=5)
+        self.entry_album_name.grid(row=5, column=6, columnspan=5)
+        self.display_genre.grid(row=6, column=6, columnspan=5)
+        self.entry_genre.grid(row=7, column=6, columnspan=5)
+
+        self.display_duration.grid(row=6, column=0, columnspan=4)
+        self.display_bitrate.grid(row=7, column=0, columnspan=4)
+        self.create_save_button()
+        self.create_discard_button()
+        self.create_proceed_button()
 
     def create_save_button(self):
-        self.search_btn = ttk.Button(self, text='Save Changes',
+        self.search_btn = ttk.Button(self.display_frame, text='Save Changes',
                                      command=(lambda: self.click_save()))
-        self.search_btn.grid(column=3, row=13)
+        self.search_btn.grid(column=0, row=10, rowspan=4, sticky='nsew')
 
     def create_discard_button(self):
-        self.discard_btn = ttk.Button(self, text='Discard Changes',
+        self.discard_btn = ttk.Button(self.display_frame, text='Discard Changes',
                                       command=(lambda: self.click_discard()))
-        self.discard_btn.grid(column=2, row=13)
+        self.discard_btn.grid(column=4, row=10, rowspan=4, sticky='nsew')
 
     def create_proceed_button(self):
         self.bind('<Return>', (lambda event: self.click_proceed()))
-        self.proceed_btn = ttk.Button(self, text='Proceed',
+        self.proceed_btn = ttk.Button(self.display_frame, text='Proceed',
                                       command=(lambda: self.click_proceed()))
-        self.proceed_btn.grid(column=4, row=13)
+        self.proceed_btn.grid(column=8, row=10, rowspan=4, sticky='nsew')
 
     def click_save(self):
         # self.refresh_window()
