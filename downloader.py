@@ -27,7 +27,7 @@ def spotify_search(search_query):
 
     # Input song name and search spotify
     print('Searching for:', search_query)
-    result = spotify.search(search_query, limit=13)
+    result = spotify.search(search_query, limit=7)
     spotify_summary = None
     # print(json.loads(result, indent=2)
 
@@ -244,11 +244,8 @@ def dl_song(chosen_url, output_directory):
         }],
     }
 
-    # Specify output directory for downloads
+    # Go to output directory
     os.chdir(output_directory)
-    if not os.path.exists('songs'):
-        os.mkdir('songs')
-    os.chdir('songs')
     #print('cwd is:', os.getcwd())
 
     # Download song from chosen Youtube url
@@ -269,26 +266,31 @@ def dl_cover_art(index, spotify_summary):
     response = urllib.request.urlretrieve(spotify_summary[index]['album_art'], image_file)
 
 
-def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root_directory):
+def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root_directory, downloading, output_directory):
     # Rename audio file to 'temp.mp3' because file might have non-ascii characters (eyed3 cannot handle these)
-    try:
-        if os.path.exists('temp.mp3'):
-            os.remove('temp.mp3')
-            print('removed ')
+    if os.path.exists('temp.mp3'):
+        os.remove('temp.mp3')
+        print('removed ')
+    if downloading == True:
         os.rename(audio_filename, 'temp.mp3')
         apply_tags = eyed3.load('temp.mp3')
-        apply_tags.initTag()
-        apply_tags.tag.images.set(3, open('img.png', 'rb').read(), 'image/png')
-        apply_tags.tag.artist = spotify_summary[index]['artist']
-        apply_tags.tag.title = spotify_summary[index]['track']
-        apply_tags.tag.album = spotify_summary[index]['album']
-        apply_tags.tag.album_artist = spotify_summary[index]['album_artist']
-        apply_tags.tag.recording_date = spotify_summary[index]['year']
-        apply_tags.tag.track_num = spotify_summary[index]['track_number']
-        apply_tags.tag.save()
-        print('Media tags and album art applied to audio file')
-        os.rename('temp.mp3', output_filename)
-        os.chdir(root_directory)
+    else:
+        os.chdir(output_directory)
+        apply_tags = eyed3.load(output_filename)
+    apply_tags.initTag()
+    apply_tags.tag.images.set(3, open(f'img{index}.png', 'rb').read(), 'image/png')
+    apply_tags.tag.artist = spotify_summary[index]['artist']
+    apply_tags.tag.title = spotify_summary[index]['track']
+    apply_tags.tag.album = spotify_summary[index]['album']
+    apply_tags.tag.album_artist = spotify_summary[index]['album_artist']
+    apply_tags.tag.recording_date = spotify_summary[index]['year']
+    apply_tags.tag.track_num = spotify_summary[index]['track_number']
+    try:
+        apply_tags.tag.genre = spotify_summary[index]['genre']
     except:
-        print('Could not apply media tags to file')
-        os.chdir(root_directory)
+        print('no genre')
+    apply_tags.tag.save()
+    print('Media tags and album art applied to audio file')
+    if downloading == True:
+        os.rename('temp.mp3', output_filename)
+    os.chdir(root_directory)

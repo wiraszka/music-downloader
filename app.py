@@ -18,7 +18,7 @@ from PIL import ImageTk, Image
 # CONSTANTS
 HEIGHT = 432
 WIDTH = 768
-output_directory = 'C:/Users/Adam/Desktop'  # default output directory
+output_directory = 'C:/Users/Adam/Desktop/songs'  # default output directory
 root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # Where program files reside
 progress_text = {'searching': 'Searching for download links...',
                  'found': 'Found download links',
@@ -196,7 +196,7 @@ class Window(tk.ThemedTk):
             self.canvas.delete(self.canvas_text)
 
     def sp_albums(self):
-        for i in range(7):
+        for i in range(len(self.search_results)):
             print('downloading cover art image')
             ad.dl_cover_art(i, self.search_results)
 
@@ -214,7 +214,7 @@ class Window(tk.ThemedTk):
     def sp_results(self):
         self.search_details = []
         self.search_info = []
-        for i in range(7):  # show top 7 results
+        for i in range(len(self.search_results)):  # show top 7 results
             track = self.search_results[i]
             search_text = track['artist'] + ' - ' + track['track']
             display_text = str(track['id']) + ': ' + track['artist'] + ' - ' + track['track'] + \
@@ -226,7 +226,7 @@ class Window(tk.ThemedTk):
     def display_results(self):
         self.buttons = []
         self.albums = []
-        for i in range(7):
+        for i in range(len(self.search_results)):
             self.spotify_frame = Frame(self)
             self.spotify_frame.grid(column=2, row=i+3, columnspan=3)
             self.buttons.append(ttk.Button(self.spotify_frame, text=self.search_info[i], width=60,
@@ -378,8 +378,9 @@ class Window(tk.ThemedTk):
     def apply_media_tags(self):
         self.center_text(progress_text['tags'])
         self.show_text(progress_text['tags'], self.x_display, 395)
+        self.downloading = True
         ad.apply_ID3_tags(self.index, self.search_results,
-                          self.output_name, self.output_filename, self.root_directory)
+                          self.output_name, self.output_filename, self.root_directory, self.downloading, self.output_directory)
         self.after(500, self.check_media_added)
 
     def check_media_added(self):
@@ -393,9 +394,6 @@ class Window(tk.ThemedTk):
         self.set_theme('arc')
         self.create_canvas(15, 9)
         self.create_menu()
-        # self.create_save_button()
-        # self.create_discard_button()
-        # self.create_proceed_button()
         self.create_display_frame()
         # self.create_test_buttons()
 
@@ -417,46 +415,70 @@ class Window(tk.ThemedTk):
 
     def create_display_frame(self):
         # Create new frame
-        self.display_frame = Frame(self, height=400, width=450)  # 320
-        self.display_frame.grid(row=3, column=1, rowspan=10, columnspan=10)
-        # Create album cover label (TOP LEFT)
-        self.display_album = Label(self.display_frame, padx=15, pady=15)
-        # Create text labels (BOTTOM LEFT)
-        self.display_duration = Label(self.display_frame, text='Duration:')
-        self.display_bitrate = Label(self.display_frame, text='Bitrate:')
-        # Create entry fields (RIGHT SIDE)
-        self.entry_artist = ttk.Entry(self.display_frame, width=40)
-        self.entry_artist.insert(0, self.search_results[self.index]['artist'])
-        self.entry_track = ttk.Entry(self.display_frame, width=40)
-        self.entry_track.insert(0, self.search_results[self.index]['track'])
-        self.entry_album_name = ttk.Entry(self.display_frame, width=40)
-        self.entry_album_name.insert(0, self.search_results[self.index]['album'])
-        self.entry_genre = ttk.Entry(self.display_frame, width=40)
-        # Create text labels (RIGHT SIDE)
-        self.display_artist = Label(self.display_frame, text='Artist:', anchor='nw')
-        self.display_track = Label(self.display_frame, text='Song:', anchor='nw')
-        self.display_album_name = Label(self.display_frame, text='Album:', anchor='nw')
-        self.display_genre = Label(self.display_frame, text='Genre:', anchor='nw')
+        self.display_frame = Frame(self, height=350, width=480)  # 320
+        self.display_frame.grid(row=2, column=0, rowspan=13, columnspan=12)
+        # Create Title label
+        # self.display_title = Label(self.display_frame, text='Please confirm track information')
 
-        # Show album cover on label
+        # Create album cover label (TOP LEFT)
+        self.display_album = Label(self.display_frame, bd=5, bg='ivory2', anchor='w')
+        # Create text labels (BOTTOM LEFT)
+        self.display_duration = Label(self.display_frame, text=(
+            'Duration: ' + str(self.search_results[self.index]['duration'])))
+        self.display_bitrate = Label(self.display_frame, text='Bitrate: 320kbps')
+        # Create entry fields (RIGHT SIDE)
+        self.entry_artist = ttk.Entry(self.display_frame, width=43)
+        self.entry_artist.insert(0, self.search_results[self.index]['artist'])
+        self.entry_track = ttk.Entry(self.display_frame, width=43)
+        self.entry_track.insert(0, self.search_results[self.index]['track'])
+        self.entry_album_name = ttk.Entry(self.display_frame, width=43)
+        self.entry_album_name.insert(0, self.search_results[self.index]['album'])
+        self.entry_genre = ttk.Entry(self.display_frame, width=43)
+
+        self.entry_year = ttk.Entry(self.display_frame, width=5)
+        self.entry_year.insert(0, self.search_results[self.index]['year'])
+        self.entry_track_num = ttk.Entry(self.display_frame, width=3)
+        self.entry_track_num.insert(0, self.search_results[self.index]['track_number'])
+        self.entry_total_tracks = ttk.Entry(self.display_frame, width=3)
+        self.entry_total_tracks.insert(0, self.search_results[self.index]['total_tracks'])
+
+        # Create text labels (RIGHT SIDE)
+        self.display_artist = Label(self.display_frame, text='Artist:', width=40)
+        self.display_track = Label(self.display_frame, text='Song:', width=40)
+        self.display_album_name = Label(self.display_frame, text='Album:', width=40)
+        self.display_genre = Label(self.display_frame, text='Genre:', width=40)
+
+        self.display_year = Label(self.display_frame, text='Year:', anchor='w')
+        self.display_track_num = Label(self.display_frame, text='Track #:')
+        self.display_total_tracks = Label(self.display_frame, text='Total Tracks:')
+
+        # Set album cover image on label
         cover = f'img{self.index}.png'  # cover art dimensions: 640 x 640
-        cover_resized = self.resize_cover_art(200, 200, cover)  # resize to 80 x 80
+        cover_resized = self.resize_cover_art(180, 180, cover)  # resize to 80 x 80
         self.display_album.image = cover_resized  # anchor image
         self.display_album.configure(image=cover_resized)  # set image on label
+        self.display_album.grid(row=0, column=0, rowspan=8, columnspan=8)
 
-        # Set widgets on parent frame
-        self.display_album.grid(row=0, column=0, rowspan=6, columnspan=6)
-        self.display_artist.grid(row=0, column=6, columnspan=5)
-        self.entry_artist.grid(row=1, column=6, columnspan=5)
-        self.display_track.grid(row=2, column=6, columnspan=5)
-        self.entry_track.grid(row=3, column=6, columnspan=5)
-        self.display_album_name.grid(row=4, column=6, columnspan=5)
-        self.entry_album_name.grid(row=5, column=6, columnspan=5)
-        self.display_genre.grid(row=6, column=6, columnspan=5)
-        self.entry_genre.grid(row=7, column=6, columnspan=5)
+        # Set widgets on RIGHT SIDE
+        self.display_artist.grid(row=0, column=8, columnspan=5)
+        self.entry_artist.grid(row=1, column=8, columnspan=5)
+        self.display_track.grid(row=2, column=8, columnspan=5)
+        self.entry_track.grid(row=3, column=8, columnspan=5)
+        self.display_genre.grid(row=4, column=8, columnspan=5)
+        self.entry_genre.grid(row=5, column=8, columnspan=5)
+        self.display_album_name.grid(row=6, column=8, columnspan=5)
+        self.entry_album_name.grid(row=7, column=8, columnspan=5)
+        self.display_year.grid(row=8, column=8, columnspan=2)
+        self.entry_year.grid(row=9, column=8, columnspan=2)
+        self.display_track_num.grid(row=8, column=10, columnspan=1)
+        self.entry_track_num.grid(row=9, column=10, columnspan=1)
+        self.display_total_tracks.grid(row=8, column=11, columnspan=1)
+        self.entry_total_tracks.grid(row=9, column=11, columnspan=1)
 
-        self.display_duration.grid(row=6, column=0, columnspan=4)
-        self.display_bitrate.grid(row=7, column=0, columnspan=4)
+        # Set widgets on BOTTOM LEFT SIDE
+        self.display_duration.grid(row=8, column=0, columnspan=6)
+        self.display_bitrate.grid(row=9, column=0, columnspan=6)
+
         self.create_save_button()
         self.create_discard_button()
         self.create_proceed_button()
@@ -464,30 +486,39 @@ class Window(tk.ThemedTk):
     def create_save_button(self):
         self.search_btn = ttk.Button(self.display_frame, text='Save Changes',
                                      command=(lambda: self.click_save()))
-        self.search_btn.grid(column=0, row=10, rowspan=4, sticky='nsew')
+        self.search_btn.grid(column=0, row=11, columnspan=4, sticky='nsew')
 
     def create_discard_button(self):
         self.discard_btn = ttk.Button(self.display_frame, text='Discard Changes',
                                       command=(lambda: self.click_discard()))
-        self.discard_btn.grid(column=4, row=10, rowspan=4, sticky='nsew')
+        self.discard_btn.grid(column=4, row=11, columnspan=4, sticky='nsew')
 
     def create_proceed_button(self):
         self.bind('<Return>', (lambda event: self.click_proceed()))
         self.proceed_btn = ttk.Button(self.display_frame, text='Proceed',
                                       command=(lambda: self.click_proceed()))
-        self.proceed_btn.grid(column=8, row=10, rowspan=4, sticky='nsew')
+        self.proceed_btn.grid(column=8, row=11, columnspan=5, sticky='nsew')
 
     def click_save(self):
         # self.refresh_window()
         pass
 
     def click_discard(self):
-        # self.refresh_window()
-        pass
+        self.refresh_window()
 
     def click_proceed(self):
-        # self.refresh_window()
-        pass
+        self.downloading = False
+        self.search_results[self.index]['artist'] = self.entry_artist.get()
+        self.search_results[self.index]['track'] = self.entry_track.get()
+        self.search_results[self.index]['album'] = self.entry_album_name.get()
+        self.search_results[self.index]['track_number'] = self.entry_track_num.get()
+        #self.search_results[self.index]['total_tracks'] = self.entry_total_tracks.get()
+        self.search_results[self.index]['year'] = self.entry_year.get()
+        self.search_results[self.index]['genre'] = self.entry_genre.get()
+        ad.apply_ID3_tags(self.index, self.search_results,
+                          self.output_name, self.output_filename, self.root_directory, self.downloading, self.output_directory)
+        self.remove_widgets()
+        self.refresh_window()
 
 
 if __name__ == "__main__":
