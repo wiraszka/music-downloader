@@ -186,10 +186,11 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
     matched = False
     vid_list = {'highest_match': 0}
     for item in youtube_results:
+        # Filter youtube results to remove covers, live recordings, etc.
         disallowed = filter_entries(search_str, item)
         if disallowed:
             continue
-        # Score youtube results based on duration match
+        # Score remaining youtube results based on duration match
         duration_diff = abs(spotify_summary[index]['duration_s'] -
                             item['duration_s'])  # calculate time difference
         duration_score = 0.35 * (100 - duration_diff)  # perfect time match is 35 points
@@ -205,6 +206,12 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
         item['duration_diff'] = duration_diff
         item['fuzzy_score'] = match_score
 
+        # Keep track of best youtube result in a dict
+        if match_score > vid_list['highest_match']:
+            vid_list['best_vid'] = item['vid_title']
+            vid_list['best_url'] = item['url']
+            vid_list['highest_match'] = match_score
+
         # Choose video if length is within 1 sec and fuzzy match above 65
         if duration_diff < 1.2 and match_ratio > 65:
             chosen_url = item['url']
@@ -212,16 +219,13 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
             print('MATCHED EARLY')
             return chosen_url, chosen_video
 
-        # Keep track of best youtube result in a dict
-        if match_score > vid_list['highest_match']:
-            vid_list['best_vid'] = item['vid_title']
-            vid_list['best_url'] = item['url']
-            vid_list['highest_match'] = match_score
-        #print('current best match is:', vid_list)
+        # Choose video if total match score above 95
         if match_score > 95:
             matched = True
             chosen_url = item['url']
             chosen_video = item['vid_title']
+
+    # If no video crosses threshold for automatic selection, choose "best" url from vid_list
     if matched == False:
         chosen_url = vid_list['best_url']
         chosen_video = vid_list['best_vid']
@@ -237,6 +241,7 @@ def dl_song(chosen_url, output_directory):
         'format': 'bestaudio/best',
         'outtmpl': '%(title)s.%(ext)s',
         'nocheckcertificate': 'True',
+        'progress_hooks': [my_hook],
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -246,7 +251,6 @@ def dl_song(chosen_url, output_directory):
 
     # Go to output directory
     os.chdir(output_directory)
-    #print('cwd is:', os.getcwd())
 
     # Download song from chosen Youtube url
     with youtube_dl.YoutubeDL(download_options) as dl:
@@ -258,6 +262,14 @@ def dl_song(chosen_url, output_directory):
     return audio_filename
 
 
+def my_hook(d):
+    if d['status'] == 'finished':
+        file_tuple = os.path.split(os.path.abspath(d['filename']))
+        print("Done downloading {}".format(file_tuple[1]))
+    if d['status'] == 'downloading':
+        print(d['filename'], d['_percent_str'], d['_eta_str'])
+
+
 def dl_cover_art(index, spotify_summary):
     # Download cover art
     if os.path.exists(f'img{index}.png'):
@@ -267,18 +279,21 @@ def dl_cover_art(index, spotify_summary):
 
 
 def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root_directory, downloading, output_directory):
-    # Rename audio file to 'temp.mp3' because file might have non-ascii characters (eyed3 cannot handle these)
+    os.chdir(output_directory)
+    # Rename audio file to "temp.mp3", since file might have non-ascii characters (eyed3 cannot handle these)
     if os.path.exists('temp.mp3'):
         os.remove('temp.mp3')
         print('removed ')
+    # True during initial download
     if downloading == True:
         os.rename(audio_filename, 'temp.mp3')
         apply_tags = eyed3.load('temp.mp3')
-    else:
-        os.chdir(output_directory)
+        apply_tags.initTag()
+        apply_tags.tag.images.set(3, open(f'img{index}.png', 'rb').read(), 'image/png')
+    # False during final confirmation
+    elif downloading == False:
         apply_tags = eyed3.load(output_filename)
-    apply_tags.initTag()
-    apply_tags.tag.images.set(3, open(f'img{index}.png', 'rb').read(), 'image/png')
+        apply_tags.initTag()
     apply_tags.tag.artist = spotify_summary[index]['artist']
     apply_tags.tag.title = spotify_summary[index]['track']
     apply_tags.tag.album = spotify_summary[index]['album']
@@ -290,7 +305,18 @@ def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root
     except:
         print('no genre')
     apply_tags.tag.save()
-    print('Media tags and album art applied to audio file')
+    # Rename audio file from "temp.mp3"
     if downloading == True:
         os.rename('temp.mp3', output_filename)
+    print('Media tags and album art applied to audio file')
+    # Delete cover art image from output folder
+    if os.path.exists(f'img{index}.png'):
+        os.remove(f'img{index}.png')
     os.chdir(root_directory)
+
+
+# chosen_url = 'https://www.youtube.com/watch?v=lI2CYUUdwwQ'
+# output_directory = 'C:/Users/Adam/Desktop/songs'
+# audio_filename = dl_song(chosen_url, output_directory)
+# progress = my_hook(d)
+# print(progress)
