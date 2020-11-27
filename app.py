@@ -4,8 +4,8 @@ Date Started: July 17 2020
 """
 
 
-# import spotify_search as sp
-# import youtube_search as yt
+import search_spotify as sp
+import search_youtube as yt
 import downloader as ad
 import os
 import json
@@ -148,7 +148,7 @@ class Window(tk.ThemedTk):
             self.search_track()
 
     def search_track(self):
-        self.results = ad.spotify_search(self.search_query)
+        self.results = sp.spotify_search(self.search_query)
         self.search_status = self.results[1]
         # print(self.search_results)
         print(self.search_status)
@@ -318,7 +318,7 @@ class Window(tk.ThemedTk):
             self.connecting_annimation.start()
 
     def yt_search(self):
-        self.youtube_results = ad.search_youtube(self.search_str)
+        self.youtube_results = yt.search_yt(self.search_str)
         print(self.youtube_results)
 
     def start_search_thread(self):
@@ -356,13 +356,13 @@ class Window(tk.ThemedTk):
             self.progress_thread = threading.Thread(target=self.progress_control).start()
             # Conditional True if spotify search was successful
             if self.search_status == True:
-                self.best_choice = ad.match_audio(
+                self.best_choice = yt.match_audio(
                     self.search_str, self.search_results, self.youtube_results, self.index)
                 self.output_filename = self.search_str + '.mp3'
                 self.after(100, self.start_dl_thread)  # pause so display text can be read
             # Conditional False if spotify search unsuccessful
             else:
-                self.best_choice = ad.match_string_only(self.search_str, self.youtube_results)
+                self.best_choice = yt.match_string_only(self.search_str, self.youtube_results)
                 self.output_filename = self.best_choice[1] + '.mp3'
                 self.after(100, self.start_dl_thread)  # pause so display text can be read
 
