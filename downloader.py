@@ -4,26 +4,24 @@ import ffmpeg
 import html
 import json
 import os
+import pafy
 import re
 import spotipy
-import spotipy.util as util
 import urllib.request
 import youtube_dl
-from apiclient.discovery import build  # youtube API
+from googleapiclient.discovery import build  # youtube API
 from config import SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, YOUTUBE_API_KEY
 from fuzzywuzzy import fuzz
 from json.decoder import JSONDecodeError
-from spotipy import oauth2
+from spotipy.oauth2 import SpotifyClientCredentials
 from string import printable
 from urllib.request import urlopen
 
 
 def spotify_search(search_query):
-    # Get access token for Spotipy API
-    token = util.oauth2.SpotifyClientCredentials(
-        client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET)
-    cache_token = token.get_access_token()
-    spotify = spotipy.Spotify(cache_token)
+    # Authenticate and get access token for Spotipy API
+    auth = SpotifyClientCredentials(client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET)
+    spotify = spotipy.Spotify(auth_manager=auth)
 
     # Input song name and search spotify
     print('Searching for:', search_query)
@@ -236,29 +234,16 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
 
 
 def dl_song(chosen_url, output_directory):
-    # Youtube_dl parameters config
-    download_options = {
-        'format': 'bestaudio/best',
-        'outtmpl': '%(title)s.%(ext)s',
-        'nocheckcertificate': 'True',
-        'progress_hooks': [my_hook],
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '320',
-        }],
-    }
 
     # Go to output directory
     os.chdir(output_directory)
 
-    # Download song from chosen Youtube url
-    with youtube_dl.YoutubeDL(download_options) as dl:
-        audio_filename = dl.prepare_filename(dl.extract_info(chosen_url))
-        audio_filename = audio_filename.replace('.m4a', '.mp3')
-        audio_filename = audio_filename.replace('.webm', '.mp3')
-        # dl.download([chosen_url])
-        print('filename is:', audio_filename)
+    # Download audio from Youtube url
+    video = pafy.new(chosen_url)
+    audio_filename = video.title + 'mp3'
+    best_audio = video.getbestaudio()
+    print("Bitrate:", best_audio.bitrate)
+    best_audio.download()
     return audio_filename
 
 
@@ -288,12 +273,12 @@ def apply_ID3_tags(index, spotify_summary, audio_filename, output_filename, root
     if downloading == True:
         os.rename(audio_filename, 'temp.mp3')
         apply_tags = eyed3.load('temp.mp3')
-        apply_tags.initTag()
-        apply_tags.tag.images.set(3, open(f'img{index}.png', 'rb').read(), 'image/png')
     # False during final confirmation
     elif downloading == False:
         apply_tags = eyed3.load(output_filename)
-        apply_tags.initTag()
+    apply_tags.initTag()
+    cover_art_image = root_directory + '/' + f'img{index}.png'
+    apply_tags.tag.images.set(3, open(cover_art_image, 'rb').read(), 'image/png')
     apply_tags.tag.artist = spotify_summary[index]['artist']
     apply_tags.tag.title = spotify_summary[index]['track']
     apply_tags.tag.album = spotify_summary[index]['album']

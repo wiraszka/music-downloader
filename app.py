@@ -3,6 +3,9 @@ Author: Adam Wiraszka
 Date Started: July 17 2020
 """
 
+
+# import spotify_search as sp
+# import youtube_search as yt
 import downloader as ad
 import os
 import json
@@ -30,7 +33,7 @@ class Window(tk.ThemedTk):
         self.set_theme('arc')  # clearlooks, plastik, arc
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
-        self.iconphoto(False, PhotoImage(file='my_icon.png'))
+        self.iconphoto(False, PhotoImage(file='images/my_icon.png'))
         self.create_canvas(15, 5)  # number of rows & columns in grid
         self.create_menu()
         self.create_entry(13, 2)  # row, column
@@ -44,7 +47,7 @@ class Window(tk.ThemedTk):
     def create_canvas(self, rows, cols):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
         self.canvas.grid(column=0, row=0, rowspan=rows, columnspan=cols)
-        img_main = Image.open('bg_main.jpg')
+        img_main = Image.open('images/bg_main.jpg')
         resized = img_main.resize((WIDTH, HEIGHT), Image.ANTIALIAS)
         self.canvas.image = ImageTk.PhotoImage(resized)
         self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
@@ -381,7 +384,6 @@ class Window(tk.ThemedTk):
             self.dl_thread = threading.Thread(target=self.yt_download)
             self.dl_thread.daemon = True
             self.dl_thread.start()
-            # self.progress_control()
             self.after(100, self.check_dl_thread)
 
     def check_dl_thread(self):
@@ -389,31 +391,30 @@ class Window(tk.ThemedTk):
             self.update_progress_gui()
             self.after(20, self.check_dl_thread)
         else:
-            print('Download complete. RUSH TO 85!')
             self.progress_rush = True
             if self.progress_updating == True:
                 self.update_progress_gui()
                 self.after(20, self.check_dl_thread)
             else:
-                if self.search_status == True:
-                    self.dl_cover_art()
-                else:
-                    self.center_text('No track info to add to audio file')
-                    self.show_text('No track info to add to audio file', self.x_display, 395)
-                    self.after(500, self.check_media_added)
+                self.start_media_thread()
 
-    def dl_cover_art(self):
-        if self.progress_updating == True:
-            print('waiting')
-            self.update_progress_gui()
-            self.after(80, self.dl_cover_art)
-        elif self.progress_updating == False:
+    def start_media_thread(self):
+        print('Download complete.')
+        if self.search_status == True:
             self.progress_part = 4
             self.progress_thread = threading.Thread(target=self.progress_control).start()
             self.center_text('Downloading cover art')
             self.show_text('Downloading cover art', self.x_display, 395)
-            ad.dl_cover_art(self.index, self.search_results)
-            self.after(500, self.apply_media_tags)
+            self.dl_cover_art()
+            self.after(100, self.check_media_added)
+        else:
+            self.center_text('No track info to add to audio file')
+            self.show_text('No track info to add to audio file', self.x_display, 395)
+            self.after(500, self.switch_to_confirmation)
+
+    def dl_cover_art(self):
+        ad.dl_cover_art(self.index, self.search_results)
+        self.after(500, self.apply_media_tags)
 
     def apply_media_tags(self):
         self.center_text('Applying media tags')
@@ -424,7 +425,14 @@ class Window(tk.ThemedTk):
         self.after(500, self.check_media_added)
 
     def check_media_added(self):
-        print('Download process complete')
+        if self.progress_updating == True:
+            self.update_progress_gui()
+            self.after(60, self.check_media_added)
+        else:
+            self.switch_to_confirmation()
+
+    def switch_to_confirmation(self):
+        print('Process complete')
         os.chdir(root_directory)
         self.remove_widgets()
         self.switch_page('confirmation_page')
@@ -455,7 +463,7 @@ class Window(tk.ThemedTk):
         # Create label displaying COVER ART
         self.display_album = Label(self.display_frame, bd=5, bg='ivory2', anchor='w')
         cover = f'img{self.index}.png'  # cover art dimensions: 640 x 640
-        cover_resized = self.resize_cover_art(190, 190, cover)  # resize to 80 x 80
+        cover_resized = self.resize_cover_art(190, 190, cover)  # resize to 190 x 190
         self.display_album.image = cover_resized  # anchor image
         self.display_album.configure(image=cover_resized)  # set image on label
         self.display_album.grid(row=0, column=0, rowspan=8, columnspan=8)
