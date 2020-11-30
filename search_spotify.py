@@ -8,6 +8,7 @@ from config import SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET
 
 def spotify_search(search_query):
     # Authenticate and get access token for Spotipy API
+    print('Establishing connection to Spotify.')
     auth = SpotifyClientCredentials(client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET)
     spotify = spotipy.Spotify(auth_manager=auth)
 
@@ -15,14 +16,13 @@ def spotify_search(search_query):
     print('Searching for:', search_query)
     result = spotify.search(search_query, limit=7)
     spotify_summary = None
-    # print(json.loads(result, indent=2)
 
     # Check if search successful
     if len(result['tracks']['items']) < 1:
-        print('Spotify search failed')
+        print('Spotify search failed.')
         search_success = False
     else:
-        print('Spotify search successful')
+        print('Spotify search successful.')
         search_success = True
 
     # If spotify search successful, return relevant song info for top-10 results in json format
@@ -48,5 +48,4 @@ def spotify_search(search_query):
                   '- album:', tags['album'], '- duration:', tags['duration'])
             song_info.append(tags)
         spotify_summary = json.dumps(song_info, indent=2)
-    # print(spotify_summary)
     return spotify_summary, search_success

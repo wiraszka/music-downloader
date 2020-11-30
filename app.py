@@ -3,10 +3,13 @@ Author: Adam Wiraszka
 Date Started: July 17 2020
 """
 
-
+# Import local scripts
 import search_spotify as sp
 import search_youtube as yt
 import downloader as ad
+import process_text as pt
+
+# Import dependencies
 import os
 import json
 import time
@@ -21,15 +24,18 @@ from PIL import ImageTk, Image
 # CONSTANTS
 HEIGHT = 432
 WIDTH = 768
-output_directory = 'C:/Users/Adam/Desktop/songs'  # default output directory
-root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # Where program files are
+output_directory = 'C:/Users/Adam/Desktop/songs'  # audio file destination
+root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # program files location
+cover_art_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader/images/cover_art' # cover art dl destination
 
 
 class Window(tk.ThemedTk):
     def __init__(self):
         super(Window, self).__init__()
+        print('='*80)
+        print('PROCESS SUMMARY')
+        print('='*80)
         self.title("Adam's Bomb Ass Music Downloader")
-        # print(self.get_themes())
         self.set_theme('arc')  # clearlooks, plastik, arc
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
@@ -43,6 +49,7 @@ class Window(tk.ThemedTk):
     def configure_directories(self):
         self.output_directory = output_directory
         self.root_directory = root_directory
+        self.cover_art_directory = cover_art_directory
 
     def create_canvas(self, rows, cols):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
@@ -101,12 +108,12 @@ class Window(tk.ThemedTk):
         pixel_count = char_count * 5.8  # pixels per character
         shift_pixels = pixel_count / 2
         self.x_display = 384 - shift_pixels
-        print(f'shifted text by {shift_pixels} pixels')
+        #print(f'shifted text by {shift_pixels} pixels')
 
     def resize_cover_art(self, width, height, file):
         cover = Image.open(file)  # cover art dimensions: 640 x 640
         cover_resized = cover.resize((width, height), Image.ANTIALIAS)  # resize to 42 x 42
-        print('resized image to:', width, 'x', height)
+        #print('resized image to:', width, 'x', height)
         cover_img = ImageTk.PhotoImage(cover_resized)
         return cover_img
 
@@ -116,13 +123,10 @@ class Window(tk.ThemedTk):
 
     def switch_page(self, new_page):
         if new_page == 'spotify_page':
-            print('spotify page')
             self.spotify_page()
         if new_page == 'download_page':
-            print('download page')
             self.download_page()
         if new_page == 'confirmation_page':
-            print('confirmation page')
             self.confirmation_page()
 
     def refresh_window(self):
@@ -141,7 +145,7 @@ class Window(tk.ThemedTk):
             try:
                 self.canvas.delete(self.canvas_text)
             except:
-                print('valid entry')
+                print('Valid entry by user.')
             self.center_text('Searching...')
             self.show_text('Searching...', self.x_display, 395)
             self.search_query = self.entry.get()
@@ -150,8 +154,6 @@ class Window(tk.ThemedTk):
     def search_track(self):
         self.results = sp.spotify_search(self.search_query)
         self.search_status = self.results[1]
-        # print(self.search_results)
-        print(self.search_status)
         if self.search_status == True:
             self.search_results = json.loads(self.results[0])
             self.remove_widgets()
@@ -164,13 +166,13 @@ class Window(tk.ThemedTk):
         self.show_text('Could not find track', self.x_display, 395)
         self.continue_anyways = messagebox.askokcancel(
             'Confirmation', 'Could not find track information.\nDownload audio anyways?')
-        print('outcome is', self.continue_anyways)
+        print('Outcome is:', self.continue_anyways)
         if self.continue_anyways:
             self.search_str = self.search_query
             self.remove_widgets()
             self.switch_page('download_page')
         else:
-            print('cancelled search')
+            print('Cancelled search.')
 
 # =======  SEARCH SPOTIFY  ==================================================================================================
 
@@ -202,21 +204,18 @@ class Window(tk.ThemedTk):
             time.sleep(0.3)
             self.text = text + '...'
             time.sleep(0.3)
-        else:
-            print('done search process')
 
     def sp_albums(self):
         for i in range(len(self.search_results)):
-            print('downloading cover art image')
-            ad.dl_cover_art(i, self.search_results)
+            ad.dl_cover_art(i, self.search_results, self.cover_art_directory, self.root_directory)
 
     def check_sp_albums(self):
         if self.dl_albums_thread.is_alive():
             self.show_text(self.text, self.x_display, 395)
-            print('waiting for albums to download')
             self.after(300, self.check_sp_albums)
         else:
             self.sp_status = False
+            print('Successfully downloaded cover art images.')
             self.canvas.delete(self.canvas_text)
             self.sp_results_page()
 
@@ -236,7 +235,7 @@ class Window(tk.ThemedTk):
             search_text = track['artist'] + ' - ' + track['track']
             display_text = str(track['id']) + ': ' + track['artist'] + ' - ' + track['track'] + \
                 '\n' + 'Album: ' + track['album'] + ' - ' + track['duration']
-            display_text_centered = ad.modify_text(display_text)
+            display_text_centered = pt.modify_text(display_text)
             self.search_details.append(search_text)
             self.search_info.append(display_text_centered)
 
@@ -249,8 +248,9 @@ class Window(tk.ThemedTk):
             self.buttons.append(ttk.Button(self.spotify_frame, text=self.search_info[i], width=60,
                                            command=lambda i=i: self.choose_song(i)))
             self.buttons[i].grid(column=3, row=i+3, columnspan=2)
-            file = f'img{i}.png'  # cover art dimensions: 640 x 640
-            cover_resized = self.resize_cover_art(42, 42, file)  # resize to 42 x 42
+            img = f'img{i}.png'  # cover art dimensions: 640 x 640
+            img_file = cover_art_directory + '/' + img
+            cover_resized = self.resize_cover_art(42, 42, img_file)  # resize to 42 x 42
             self.album_label = Label(self.spotify_frame)  # create label
             self.album_label.image = cover_resized  # anchor image
             self.album_label.configure(image=cover_resized)  # set image on label
@@ -259,7 +259,7 @@ class Window(tk.ThemedTk):
 
     def choose_song(self, i):
         self.index = i
-        print('user choice:', i)
+        print('User song choice:', i + 1)
         self.search_str = self.search_details[i]
         self.remove_widgets()
         self.switch_page('download_page')
@@ -277,12 +277,12 @@ class Window(tk.ThemedTk):
         self.progress_updating = True
         for i in range(start, stop):
             current = i
-            print('progress:', current)
+            #print('progress:', current)
             self.progress_value = i
             time.sleep(time_int)
             if self.progress_rush:
                 for n in range(current, stop):
-                    print('rush:', n)
+                    #print('rush:', n)
                     self.progress_value = n
                     time.sleep(0.03)
                 self.progress_rush = False
@@ -290,18 +290,20 @@ class Window(tk.ThemedTk):
         self.progress_updating = False
 
     def progress_control(self):
-        # Searching (0-25)
+        '''
+        Controls progress bar progression.
+            Part 1: Connecting to Youtube API and searching Youtube (0%-25%)
+            Part 2: Analyzing Youtube results and finding best match (25%-35%)
+            Part 3: Downloading audio from Youtube (35%-85%)
+            Part 4: Adding media tags and cover art to audio file (85%-100%)
+        '''
         if self.progress_part == 1:
-            print('starting part 1')
             self.update_progress(0, 25, 0.2)  # start %, stop %, time interval between %
         if self.progress_part == 2:
-            print('starting part 2')
             self.update_progress(25, 35, 0.08)  # start %, stop %, time interval
         if self.progress_part == 3:
-            print('starting part 3')
             self.update_progress(35, 85, 0.3)  # start %, stop %, time interval
         if self.progress_part == 4:
-            print('starting part 4')
             self.update_progress(85, 101, 0.05)  # start %, stop %, time interval
 
     def update_progress_gui(self):
@@ -319,7 +321,6 @@ class Window(tk.ThemedTk):
 
     def yt_search(self):
         self.youtube_results = yt.search_yt(self.search_str)
-        print(self.youtube_results)
 
     def start_search_thread(self):
         self.show_text('Searching for download links...', 305, 395)
@@ -340,12 +341,12 @@ class Window(tk.ThemedTk):
             self.after(80, self.check_search_thread)
         else:
             self.progress_rush = True
-            print('RUSH TO 25!')
+            #print('RUSH TO 25!')
             self.compare_audio()
 
     def compare_audio(self):
         if self.progress_updating == True:
-            print('waiting')
+            #print('waiting')
             self.update_progress_gui()
             self.after(80, self.compare_audio)
         elif self.progress_updating == False:
@@ -367,15 +368,15 @@ class Window(tk.ThemedTk):
                 self.after(100, self.start_dl_thread)  # pause so display text can be read
 
     def yt_download(self):
-        self.output_name = ad.dl_song(self.best_choice[0], self.output_directory)
+        self.output_filename = ad.dl_song(self.best_choice[0], self.output_directory)
 
     def start_dl_thread(self):
         if self.progress_updating == True:
-            print('waiting')
+            #print('waiting')
             self.update_progress_gui()
             self.after(80, self.start_dl_thread)
         elif self.progress_updating == False:
-            print('STARTING DOWNLOAD')
+            print('STARTING DOWNLOAD.')
             self.dl_text = str('Downloading: ' + self.output_filename)
             self.center_text(self.dl_text)
             self.show_text(self.dl_text, self.x_display, 395)
@@ -399,29 +400,25 @@ class Window(tk.ThemedTk):
                 self.start_media_thread()
 
     def start_media_thread(self):
-        print('Download complete.')
+        print('Download completed successfully.')
         if self.search_status == True:
             self.progress_part = 4
             self.progress_thread = threading.Thread(target=self.progress_control).start()
-            self.center_text('Downloading cover art')
-            self.show_text('Downloading cover art', self.x_display, 395)
-            self.dl_cover_art()
-            self.after(100, self.check_media_added)
+            self.center_text('Fetching cover art')
+            self.show_text('Fetching cover art', self.x_display, 395)
+            self.after(100, self.apply_media_tags)
         else:
             self.center_text('No track info to add to audio file')
             self.show_text('No track info to add to audio file', self.x_display, 395)
             self.after(500, self.switch_to_confirmation)
 
-    def dl_cover_art(self):
-        ad.dl_cover_art(self.index, self.search_results)
-        self.after(500, self.apply_media_tags)
 
     def apply_media_tags(self):
         self.center_text('Applying media tags')
         self.show_text('Applying media tags', self.x_display, 395)
         self.downloading = True
         ad.apply_ID3_tags(self.index, self.search_results,
-                          self.output_name, self.output_filename, self.root_directory, self.downloading, self.output_directory)
+                          self.output_filename, self.root_directory, self.downloading, self.output_directory, self.cover_art_directory)
         self.after(500, self.check_media_added)
 
     def check_media_added(self):
@@ -429,10 +426,10 @@ class Window(tk.ThemedTk):
             self.update_progress_gui()
             self.after(60, self.check_media_added)
         else:
+            print('Media tags and album art applied to audio file.')
             self.switch_to_confirmation()
 
     def switch_to_confirmation(self):
-        print('Process complete')
         os.chdir(root_directory)
         self.remove_widgets()
         self.switch_page('confirmation_page')
@@ -462,8 +459,9 @@ class Window(tk.ThemedTk):
     def display_album_cover(self):
         # Create label displaying COVER ART
         self.display_album = Label(self.display_frame, bd=5, bg='ivory2', anchor='w')
-        cover = f'img{self.index}.png'  # cover art dimensions: 640 x 640
-        cover_resized = self.resize_cover_art(190, 190, cover)  # resize to 190 x 190
+        img = f'img{self.index}.png'  # cover art dimensions: 640 x 640
+        img_file = self.cover_art_directory + '/' + img
+        cover_resized = self.resize_cover_art(190, 190, img_file)  # resize to 190 x 190
         self.display_album.image = cover_resized  # anchor image
         self.display_album.configure(image=cover_resized)  # set image on label
         self.display_album.grid(row=0, column=0, rowspan=8, columnspan=8)
@@ -567,7 +565,7 @@ class Window(tk.ThemedTk):
         self.search_results[self.index]['year'] = self.entry_year.get()
         self.search_results[self.index]['genre'] = self.entry_genre.get()
         ad.apply_ID3_tags(self.index, self.search_results,
-                          self.output_name, self.output_filename, self.root_directory, self.downloading, self.output_directory)
+                          self.output_filename, self.root_directory, self.downloading, self.output_directory, self.cover_art_directory)
         self.remove_widgets()
         self.refresh_window()
 

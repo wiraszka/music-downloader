@@ -48,11 +48,11 @@ def filter_entries(search_str, item):
     print('Analyzing:', item['vid_title'], item['duration'])
     if 'cover' not in search_str:
         if 'cover' in item['vid_title'].lower():
-            print('DISALLOWED due to cover')
+            print('DISALLOWED due to cover.')
             disallowed = True
     if 'live' not in search_str:
         if 'live' in item['vid_title'].lower():
-            print('DISALLOWED due to live')
+            print('DISALLOWED due to live.')
             disallowed = True
     return disallowed
 
@@ -119,7 +119,10 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
         if duration_diff < 1.2 and match_ratio > 65:
             chosen_url = item['url']
             chosen_video = item['vid_title']
-            print('MATCHED EARLY')
+            print('-'*80)
+            print('Suitable video found.')
+            print('Chosen download link:', chosen_video)
+            print('-'*80)
             return chosen_url, chosen_video
 
         # Choose video if total match score above 95
@@ -132,7 +135,8 @@ def match_audio(search_str, spotify_summary, youtube_results, index):
     if matched == False:
         chosen_url = vid_list['best_url']
         chosen_video = vid_list['best_vid']
-    print('=' * 80)
+    print('-' * 80)
+    print('No videos matched above threshold. Choosing closest video from list...')
     print('Chosen download link:', chosen_video)
-    print('=' * 80)
+    print('-' * 80)
     return chosen_url, chosen_video
