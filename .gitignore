@@ -5,5 +5,6 @@ songs
 .mp3
 music_env
 tests
+build
+dist
 images
-checklist.md

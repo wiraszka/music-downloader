@@ -1,0 +1,18 @@
+PYINSTALLER DEBUGGING:
+
+
+CMD command (compiler works!):
+
+pyinstaller main.py --onefile --icon=images/desktop_icon.ico --add-data "images\*;images" --add-data "images\cover_art\*;images\cover_art" --additional-hooks-dir .\extra-hooks\ --clean
+
+If you don't want executable to open command line (add "-w"):
+
+pyinstaller main.py -w --onefile --icon=images/desktop_icon.ico --add-data "images\*;images" --add-data "images\cover_art\*;images\cover_art" --additional-hooks-dir .\extra-hooks\ --clean
+
+
+Standalone file import tests:
+- search_spotify.py = Successful
+- downloader.py = Successful
+- search_youtube.py = extra hooks needed 
+	- create new directory called "extra-hooks",then: 
+	- pyinstaller search_youtube.py --onefile --additional-hooks-dir .\extra-hooks\
