@@ -32,7 +32,7 @@ pywin32-ctypes==0.2.0
 requests==2.25.0
 rsa==4.6
 six==1.15.0
-spotipy==2.16.1
+spotipy==2.22.1
 ttkthemes==3.2.0
 uritemplate==3.0.1
 urllib3==1.26.2
