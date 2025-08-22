@@ -6,7 +6,7 @@ deprecation==2.1.0
 eyeD3==0.9.5
 ffmpeg-python==0.2.0
 filetype==1.0.7
-future==0.18.2
+future==1.0.0
 fuzzywuzzy==0.18.0
 google-api-core==1.23.0
 google-api-python-client==1.12.8
