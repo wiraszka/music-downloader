@@ -24,7 +24,7 @@ protobuf==3.14.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pydub==0.24.1
-pyinstaller==4.1
+pyinstaller==6.0.0
 pyinstaller-hooks-contrib==2020.10
 pyparsing==2.4.7
 pytz==2020.4
