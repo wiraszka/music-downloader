@@ -6,11 +6,11 @@ import urllib.request
 from urllib.request import urlopen
 from googleapiclient.discovery import build  # youtube API
 from config import YOUTUBE_API_KEY
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 
 def search_yt(search_str):
     # Youtube API Authentication and generate search request
-    youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+    youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY, cache_discovery=False)
     request = youtube.search().list(q=search_str, part='snippet', type='video', maxResults=10)
     results = request.execute()
     # Return video title and url for each result
