@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.3] - 2026-05-23
+
+### Fixed
+- Fix icon loading on macOS — use `iconphoto()` with PNG instead of Windows-only `iconbitmap()`
+- Fix invalid regex escape sequences in `search_youtube.py` and `process_text.py` (future Python error)
+- Untrack build artifacts (`main.exe`, `__pycache__/`) and dev notes that were committed in error
+- Fix `.gitignore` glob patterns (`*.exe`, `*.txt`, `*.png`, `*.mp3`) that were not matching correctly
+
+### Security
+- Bump `ttkthemes` 3.2.0 → 3.3.0 (resolves macOS build failure)
+- Bump `pyparsing` 2.4.7 → 3.3.2 (required by `httplib2` 0.31.2)
+- Bump `packaging` 20.4 → 26.2 (required by `pyinstaller` 6.x)
+- Bump `altgraph` 0.17 → 0.17.5
+- Add `macholib==1.16.4` (macOS-only, required by `pyinstaller` on macOS)
+- Mark `pefile` and `pywin32-ctypes` as Windows-only with platform markers
+
 ## [v1.0.2] - 2026-05-23
 
 ### Added
@@ -49,5 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `pyinstaller-hooks-contrib` 2020.10 → 2026.5
 - Remove unused `pafy` dependency
 
+[v1.0.3]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.1
