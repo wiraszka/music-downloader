@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.2] - 2026-05-23
+
+### Added
+- Load API credentials from a `.env` file via `python-dotenv`; raise a clear error at startup if any are missing
+- Add `.env.example` as a setup template
+
+### Fixed
+- Replace unmaintained `fuzzywuzzy` with `rapidfuzz` (compatible API, significantly faster)
+- Suppress Google API discovery cache deprecation warning in `google-api-python-client` 2.x
+
+### Security
+- Bump `google-api-python-client` 1.12.8 → 2.196.0
+- Bump `google-api-core` 1.23.0 → 2.30.3
+- Bump `google-auth` 1.23.0 → 2.53.0
+- Bump `google-auth-httplib2` 0.0.4 → 0.4.0
+- Bump `googleapis-common-protos` 1.52.0 → 1.75.0
+- Bump `uritemplate` 3.0.1 → 4.2.0
+
 ## [v1.0.1] - 2026-05-22
 
 ### Fixed
@@ -31,4 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `pyinstaller-hooks-contrib` 2020.10 → 2026.5
 - Remove unused `pafy` dependency
 
-[v1.0.1]: https://github.com/wiraszka/music-downloader/compare/master...v1.0.1
+[v1.0.2]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.2
+[v1.0.1]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.1
