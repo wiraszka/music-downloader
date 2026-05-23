@@ -26,6 +26,7 @@ pydub==0.24.1
 pyinstaller==6.20.0
 pyinstaller-hooks-contrib==2026.5
 pyparsing==2.4.7
+python-dotenv==1.2.2
 pytz==2020.4
 pywin32-ctypes==0.2.0
 requests==2.34.2
