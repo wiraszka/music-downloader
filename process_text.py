@@ -17,7 +17,7 @@ def remove_extra_info(split_text):
         if len(line) > 68:  # 69 characters fit into display space
             if '(' in line:
                 # Remove all characters between () and []
-                line = re.sub("[\(\[].*?[\)\]]", "", line)
+                line = re.sub(r"[\(\[].*?[\)\]]", "", line)
         mod_text.append(line)
     #print(mod_text)
     return mod_text
