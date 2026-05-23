@@ -11,6 +11,7 @@ import process_text as pt
 
 # Import dependencies
 import os
+import sys
 import json
 import time
 import threading
@@ -50,8 +51,11 @@ class Window(tk.ThemedTk):
         self.set_theme('arc')  # clearlooks, plastik, arc
         self.minsize(WIDTH, HEIGHT)
         self.maxsize(WIDTH, HEIGHT)
-        #self.iconphoto(False, PhotoImage(file='images/my_icon.png'))
-        self.iconbitmap('images/desktop_icon.ico')
+        if sys.platform == 'win32':
+            self.iconbitmap('images/desktop_icon.ico')
+        else:
+            icon = PhotoImage(file='images/my_icon.png')
+            self.iconphoto(True, icon)
         self.create_canvas(15, 5)  # number of rows & columns in grid
         self.create_menu()
         self.create_entry(13, 2)  # row, column

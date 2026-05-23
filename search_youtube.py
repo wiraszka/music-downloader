@@ -28,7 +28,7 @@ def search_yt(search_str):
         response = urllib.request.urlopen(searchUrl).read()
         data = json.loads(response)
         duration = data['items'][0]['contentDetails']['duration']
-        duration = re.findall('\d+', duration)
+        duration = re.findall(r'\d+', duration)
         info['duration_s'] = int(duration[0]) * 60
         try:
             info['duration_s'] = info['duration_s'] + int(duration[1])
