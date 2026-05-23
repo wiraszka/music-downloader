@@ -14,10 +14,10 @@ import os
 import json
 import time
 import threading
-import contextlib
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
 from ttkthemes import themed_tk as tk
 from PIL import ImageTk, Image
 
@@ -25,11 +25,19 @@ from PIL import ImageTk, Image
 # CONSTANTS
 HEIGHT = 432
 WIDTH = 768
-#output_directory = 'C:/Users/Adam/Desktop/songs'  # audio file destination
-output_directory = 'C:/Users/Adam/Desktop/songs'
-root_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader'  # program files location
-cover_art_directory = 'C:/Users/Adam/Desktop/Projects/music/music-downloader/images/cover_art' # cover art dl destination
 
+# DIRECTORIES
+root_directory = os.getcwd() # program files location
+cover_art_directory = os.path.join(os.sep, root_directory + os.sep, 'images' + os.sep, 'cover_art') # cover art dl destination
+
+# Fetch custom user settings or default settings from txt file
+with open('user_settings.txt') as f:
+    settings_contents = json.loads(f.read())
+    output_directory = settings_contents.get('output_dir', os.path.join(os.path.expanduser('~'), 'Music'))
+
+print('root directory:', root_directory)
+print('cover art directory:', cover_art_directory)
+print('output directory:', output_directory)
 
 
 class Window(tk.ThemedTk):
@@ -59,7 +67,7 @@ class Window(tk.ThemedTk):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
         self.canvas.grid(column=0, row=0, rowspan=rows, columnspan=cols)
         img_main = Image.open('images/bg_main.jpg')
-        resized = img_main.resize((WIDTH, HEIGHT), Image.ANTIALIAS)
+        resized = img_main.resize((WIDTH, HEIGHT), Image.LANCZOS)
         self.canvas.image = ImageTk.PhotoImage(resized)
         self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
 
@@ -87,18 +95,44 @@ class Window(tk.ThemedTk):
         file_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label='File', menu=file_menu)
         file_menu.add_command(label='Refresh', command=self.refresh_window)
-        file_menu.add_command(label='Settings', command=self.settings_window)
+        file_menu.add_command(label='Settings', command=self.create_settings)
         file_menu.add_command(label='Exit', command=self.close_window)
         # Create HELP menu bar
         help_menu = Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label='Help', menu=help_menu)
         help_menu.add_command(label='About')
 
-    def settings_window(self):
+# ============== SETTINGS ===========================================================================================
 
+    def create_settings(self):
+        self.create_settings_frame()
+        self.choose_bitrate()
+        self.choose_output_button()
+
+
+    def create_settings_frame(self):
+        self.settings_frame = Frame(self, height=350, width=480)
+        self.settings_frame.grid(column=0, row=2, rowspan=10, columnspan=6)
+
+    def choose_bitrate(self):
+        bitrate_check_1 = Radiobutton(self.settings_frame, text = '320kps', value = 320, command=self.change_bitrate)
+        bitrate_check_2 = Radiobutton(self.settings_frame, text = '128kps', value = 128, command=self.change_bitrate)
+        bitrate_check_1.grid(column=2, row=0, sticky='ew')
+        bitrate_check_2.grid(column=2, row=2, sticky='ew')
+
+    def choose_output_button(self):
+        output_button = Button()
+        self.output_btn = ttk.Button(self.settings_frame, text='Choose Output Folder', command=(lambda: self.choose_output_dir()))
+        self.output_btn.grid(column=2, row=4, sticky='ew')
+
+    def change_bitrate(self):
+        pass
 
     def choose_output_dir(self):
         self.output_directory = filedialog.askdirectory()
+
+
+# ====================================================================================================================
 
     def create_progressbar(self):
         self.progress_bar = ttk.Progressbar(self, orient='horizontal',
@@ -122,7 +156,7 @@ class Window(tk.ThemedTk):
 
     def resize_cover_art(self, width, height, file):
         cover = Image.open(file)  # cover art dimensions: 640 x 640
-        cover_resized = cover.resize((width, height), Image.ANTIALIAS)  # resize to 42 x 42
+        cover_resized = cover.resize((width, height), Image.LANCZOS)  # resize to 42 x 42
         #print('resized image to:', width, 'x', height)
         cover_img = ImageTk.PhotoImage(cover_resized)
         return cover_img
