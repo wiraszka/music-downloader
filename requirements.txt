@@ -7,12 +7,12 @@ eyeD3==0.9.5
 ffmpeg-python==0.2.0
 filetype==1.0.7
 future==1.0.0
-fuzzywuzzy==0.18.0
-google-api-core==1.23.0
-google-api-python-client==1.12.8
-google-auth==1.23.0
-google-auth-httplib2==0.0.4
-googleapis-common-protos==1.52.0
+rapidfuzz==3.14.5
+google-api-core==2.30.3
+google-api-python-client==2.196.0
+google-auth==2.53.0
+google-auth-httplib2==0.4.0
+googleapis-common-protos==1.75.0
 httplib2==0.31.2
 idna==3.16
 MarkupSafe==1.1.1
@@ -26,6 +26,7 @@ pydub==0.24.1
 pyinstaller==6.20.0
 pyinstaller-hooks-contrib==2026.5
 pyparsing==2.4.7
+python-dotenv==1.2.2
 pytz==2020.4
 pywin32-ctypes==0.2.0
 requests==2.34.2
@@ -33,6 +34,6 @@ rsa==4.9.1
 six==1.15.0
 spotipy==2.26.0
 ttkthemes==3.2.0
-uritemplate==3.0.1
+uritemplate==4.2.0
 urllib3==2.7.0
 yt-dlp==2026.3.17
