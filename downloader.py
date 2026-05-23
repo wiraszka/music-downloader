@@ -2,7 +2,7 @@ import eyed3
 import ffmpeg
 import os
 import urllib.request
-import youtube_dl
+import yt_dlp
 
 
 
@@ -23,9 +23,9 @@ def dl_song(chosen_url, output_directory):
     }
 
     # Download audio from Youtube url
-    with youtube_dl.YoutubeDL(download_options) as dl:
-        audio_filename = dl.prepare_filename(dl.extract_info(chosen_url))
-        audio_filename = audio_filename.replace('.webm', '.mp3')
+    with yt_dlp.YoutubeDL(download_options) as dl:
+        info = dl.extract_info(chosen_url)
+        audio_filename = os.path.splitext(dl.prepare_filename(info))[0] + '.mp3'
     return audio_filename
 
 
