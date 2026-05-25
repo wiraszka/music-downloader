@@ -7,7 +7,7 @@ import yt_dlp
 
 
 def dl_song(chosen_url, output_directory):
-    # Go to output directory
+    os.makedirs(output_directory, exist_ok=True)
     os.chdir(output_directory)
 
     # Youtube_dl parameters config
@@ -48,6 +48,7 @@ def dl_cover_art(index, spotify_summary, cover_art_directory, root_directory):
 
 
 def apply_ID3_tags(index, spotify_summary, output_filename, root_directory, downloading, output_directory, cover_art_directory):
+    os.makedirs(output_directory, exist_ok=True)
     os.chdir(output_directory)
 
     # Rename audio file to "temp.mp3", since file might have non-ascii characters (eyed3 cannot handle these)

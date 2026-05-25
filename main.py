@@ -54,13 +54,14 @@ class Window(tk.ThemedTk):
         if sys.platform == 'win32':
             self.iconbitmap('images/desktop_icon.ico')
         else:
-            icon = PhotoImage(file='images/my_icon.png')
-            self.iconphoto(True, icon)
+            icon_img = ImageTk.PhotoImage(Image.open('images/desktop_icon.png'))
+            self.iconphoto(True, icon_img)
         self.create_canvas(15, 5)  # number of rows & columns in grid
         self.create_menu()
         self.create_entry(13, 2)  # row, column
         self.create_search_button(13, 3)  # row, column
         self.configure_directories()
+        self.create_folder_button()
 
     def configure_directories(self):
         self.output_directory = output_directory
@@ -91,6 +92,34 @@ class Window(tk.ThemedTk):
         self.bind('<Return>', (lambda event: self.click_search()))
         self.search_btn = ttk.Button(self, text='Search', command=(lambda: self.click_search()))
         self.search_btn.grid(column=col, row=row, sticky='w')  # 3, 13
+
+    def create_folder_button(self):
+        folder_img = Image.open('images/folder-transparent-bkg.png').resize((20, 20), Image.LANCZOS)
+        self.folder_icon = ImageTk.PhotoImage(folder_img)
+        # Draw after layout settles so winfo coordinates are available
+        self.after(100, self._draw_folder_icon)
+
+    def _draw_folder_icon(self):
+        bx = self.search_btn.winfo_x() - self.canvas.winfo_x()
+        by = self.search_btn.winfo_y() - self.canvas.winfo_y()
+        bw = self.search_btn.winfo_width()
+        bh = self.search_btn.winfo_height()
+        x = bx + bw + 6
+        y = by + (bh - 20) // 2
+        item = self.canvas.create_image(x, y, image=self.folder_icon, anchor='nw')
+        self.canvas.tag_bind(item, '<Button-1>', lambda _e: self.choose_output_dir())
+        self.canvas.tag_bind(item, '<Enter>', lambda _e: self.canvas.config(cursor='hand2'))
+        self.canvas.tag_bind(item, '<Leave>', lambda _e: self.canvas.config(cursor=''))
+
+    def _save_output_dir(self, path):
+        try:
+            with open('user_settings.txt') as f:
+                settings = json.loads(f.read())
+        except (FileNotFoundError, json.JSONDecodeError):
+            settings = {'bitrate': 320, 'output_format': 'mp3'}
+        settings['output_dir'] = path
+        with open('user_settings.txt', 'w') as f:
+            json.dump(settings, f, indent=2)
 
     def create_menu(self):
         menu_bar = Menu(self)
@@ -133,7 +162,10 @@ class Window(tk.ThemedTk):
         pass
 
     def choose_output_dir(self):
-        self.output_directory = filedialog.askdirectory()
+        chosen = filedialog.askdirectory(initialdir=self.output_directory)
+        if chosen:
+            self.output_directory = chosen
+            self._save_output_dir(chosen)
 
 
 # ====================================================================================================================
@@ -499,14 +531,15 @@ class Window(tk.ThemedTk):
         # self.create_test_buttons()
 
     def create_display_frame(self):
-        # Create new frame
-        self.display_frame = Frame(self, height=350, width=480)  # 320
-        self.display_frame.grid(row=2, column=0, rowspan=13, columnspan=12)
-        # self.display_title = Label(self.display_frame, text='Please confirm track information')
+        # Outer frame sets the dark box size; inner display_frame is centered within it
+        outer_frame = Frame(self)
+        outer_frame.grid(row=2, column=0, rowspan=13, columnspan=12)
+        self.display_frame = Frame(outer_frame)
+        self.display_frame.pack(padx=16, pady=14)
 
     def display_album_cover(self):
         # Create label displaying COVER ART
-        self.display_album = Label(self.display_frame, bd=5, bg='ivory2', anchor='w')
+        self.display_album = Label(self.display_frame, bd=5, bg='ivory2')
         img = f'img{self.index}.png'  # cover art dimensions: 640 x 640
         img_file = self.cover_art_directory + '/' + img
         cover_resized = self.resize_cover_art(190, 190, img_file)  # resize to 190 x 190
@@ -523,51 +556,54 @@ class Window(tk.ThemedTk):
         self.display_bitrate.grid(row=9, column=0, columnspan=6)
 
     def display_song_info(self):
+        entry_bg = '#d3d3d3'
+        entry_fg = 'black'
+
         # Artist Name
         self.display_artist = Label(self.display_frame, text='Artist:', width=40)
         self.display_artist.grid(row=0, column=8, columnspan=5)
-        self.entry_artist = ttk.Entry(self.display_frame, width=43)
+        self.entry_artist = Entry(self.display_frame, width=43, bg=entry_bg, fg=entry_fg)
         self.entry_artist.insert(0, self.search_results[self.index]['artist'])
         self.entry_artist.grid(row=1, column=8, columnspan=5)
 
         # Song Name
         self.display_track = Label(self.display_frame, text='Song:', width=40)
         self.display_track.grid(row=2, column=8, columnspan=5)
-        self.entry_track = ttk.Entry(self.display_frame, width=43)
+        self.entry_track = Entry(self.display_frame, width=43, bg=entry_bg, fg=entry_fg)
         self.entry_track.insert(0, self.search_results[self.index]['track'])
         self.entry_track.grid(row=3, column=8, columnspan=5)
 
         # Genre
         self.display_genre = Label(self.display_frame, text='Genre:', width=40)
         self.display_genre.grid(row=4, column=8, columnspan=5)
-        self.entry_genre = ttk.Entry(self.display_frame, width=43)
+        self.entry_genre = Entry(self.display_frame, width=43, bg=entry_bg, fg=entry_fg)
         self.entry_genre.grid(row=5, column=8, columnspan=5)
 
         # Album Name
         self.display_album_name = Label(self.display_frame, text='Album:', width=40)
         self.display_album_name.grid(row=6, column=8, columnspan=5)
-        self.entry_album_name = ttk.Entry(self.display_frame, width=43)
+        self.entry_album_name = Entry(self.display_frame, width=43, bg=entry_bg, fg=entry_fg)
         self.entry_album_name.insert(0, self.search_results[self.index]['album'])
         self.entry_album_name.grid(row=7, column=8, columnspan=5)
 
         # Release Year
         self.display_year = Label(self.display_frame, text='Year:', anchor='w')
         self.display_year.grid(row=8, column=8, columnspan=2)
-        self.entry_year = ttk.Entry(self.display_frame, width=5)
+        self.entry_year = Entry(self.display_frame, width=5, bg=entry_bg, fg=entry_fg)
         self.entry_year.insert(0, self.search_results[self.index]['year'])
         self.entry_year.grid(row=9, column=8, columnspan=2)
 
         # Track Number
         self.display_track_num = Label(self.display_frame, text='Track #:')
         self.display_track_num.grid(row=8, column=10, columnspan=1)
-        self.entry_track_num = ttk.Entry(self.display_frame, width=3)
+        self.entry_track_num = Entry(self.display_frame, width=3, bg=entry_bg, fg=entry_fg)
         self.entry_track_num.insert(0, self.search_results[self.index]['track_number'])
         self.entry_track_num.grid(row=9, column=10, columnspan=1)
 
         # Total Tracks
         self.display_total_tracks = Label(self.display_frame, text='Total Tracks:')
         self.display_total_tracks.grid(row=8, column=11, columnspan=1)
-        self.entry_total_tracks = ttk.Entry(self.display_frame, width=3)
+        self.entry_total_tracks = Entry(self.display_frame, width=3, bg=entry_bg, fg=entry_fg)
         self.entry_total_tracks.insert(0, self.search_results[self.index]['total_tracks'])
         self.entry_total_tracks.grid(row=9, column=11, columnspan=1)
 
