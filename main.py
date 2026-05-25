@@ -54,13 +54,14 @@ class Window(tk.ThemedTk):
         if sys.platform == 'win32':
             self.iconbitmap('images/desktop_icon.ico')
         else:
-            icon = PhotoImage(file='images/my_icon.png')
-            self.iconphoto(True, icon)
+            icon_img = ImageTk.PhotoImage(Image.open('images/desktop_icon.png'))
+            self.iconphoto(True, icon_img)
         self.create_canvas(15, 5)  # number of rows & columns in grid
         self.create_menu()
         self.create_entry(13, 2)  # row, column
         self.create_search_button(13, 3)  # row, column
         self.configure_directories()
+        self.create_folder_button()
 
     def configure_directories(self):
         self.output_directory = output_directory
@@ -91,6 +92,34 @@ class Window(tk.ThemedTk):
         self.bind('<Return>', (lambda event: self.click_search()))
         self.search_btn = ttk.Button(self, text='Search', command=(lambda: self.click_search()))
         self.search_btn.grid(column=col, row=row, sticky='w')  # 3, 13
+
+    def create_folder_button(self):
+        folder_img = Image.open('images/folder-transparent-bkg.png').resize((20, 20), Image.LANCZOS)
+        self.folder_icon = ImageTk.PhotoImage(folder_img)
+        # Draw after layout settles so winfo coordinates are available
+        self.after(100, self._draw_folder_icon)
+
+    def _draw_folder_icon(self):
+        bx = self.search_btn.winfo_x() - self.canvas.winfo_x()
+        by = self.search_btn.winfo_y() - self.canvas.winfo_y()
+        bw = self.search_btn.winfo_width()
+        bh = self.search_btn.winfo_height()
+        x = bx + bw + 6
+        y = by + (bh - 20) // 2
+        item = self.canvas.create_image(x, y, image=self.folder_icon, anchor='nw')
+        self.canvas.tag_bind(item, '<Button-1>', lambda _e: self.choose_output_dir())
+        self.canvas.tag_bind(item, '<Enter>', lambda _e: self.canvas.config(cursor='hand2'))
+        self.canvas.tag_bind(item, '<Leave>', lambda _e: self.canvas.config(cursor=''))
+
+    def _save_output_dir(self, path):
+        try:
+            with open('user_settings.txt') as f:
+                settings = json.loads(f.read())
+        except (FileNotFoundError, json.JSONDecodeError):
+            settings = {'bitrate': 320, 'output_format': 'mp3'}
+        settings['output_dir'] = path
+        with open('user_settings.txt', 'w') as f:
+            json.dump(settings, f, indent=2)
 
     def create_menu(self):
         menu_bar = Menu(self)
@@ -133,7 +162,10 @@ class Window(tk.ThemedTk):
         pass
 
     def choose_output_dir(self):
-        self.output_directory = filedialog.askdirectory()
+        chosen = filedialog.askdirectory(initialdir=self.output_directory)
+        if chosen:
+            self.output_directory = chosen
+            self._save_output_dir(chosen)
 
 
 # ====================================================================================================================
