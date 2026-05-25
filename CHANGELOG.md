@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.1.0] - 2026-05-25
+
+### Added
+- Add folder icon button on the main screen canvas to change the download output directory; selection is persisted to `user_settings.txt`
+- Add new app icon (`desktop_icon.png`)
+
+### Fixed
+- Create output directory if it doesn't exist before changing into it
+
+### Changed
+- Restyle metadata review screen: entry fields now use plain `Entry` widgets with a light grey background for improved readability
+
 ## [v1.0.3] - 2026-05-23
 
 ### Fixed
@@ -65,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `pyinstaller-hooks-contrib` 2020.10 → 2026.5
 - Remove unused `pafy` dependency
 
-[v1.0.3]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.3
-[v1.0.2]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.2
+[v1.1.0]: https://github.com/wiraszka/music-downloader/compare/v1.0.3...v1.1.0
+[v1.0.3]: https://github.com/wiraszka/music-downloader/compare/v1.0.2...v1.0.3
+[v1.0.2]: https://github.com/wiraszka/music-downloader/compare/v1.0.1...v1.0.2
 [v1.0.1]: https://github.com/wiraszka/music-downloader/releases/tag/v1.0.1
