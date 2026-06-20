@@ -37,4 +37,4 @@ spotipy==2.26.0
 ttkthemes==3.3.0
 uritemplate==4.2.0
 urllib3==2.7.0
-yt-dlp==2026.3.17
+yt-dlp==2026.6.9
